@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=65.5.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "overcooked-project"
+version = "0.1.0"
+description = "Course project scaffold for MARL experiments in Overcooked."
+requires-python = ">=3.9,<3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
