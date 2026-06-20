@@ -45,6 +45,14 @@ Run the reward-shaping ablation:
 bash scripts/run_ablation.sh
 ```
 
+Train the partner-diversity improvement after preparing several fixed partner runs:
+
+```bash
+bash scripts/train.sh configs/baseline_simple.json --run-name baseline_seed11 --seed 11
+bash scripts/train.sh configs/baseline_simple.json --run-name baseline_seed12 --seed 12
+bash scripts/train_diverse.sh configs/partner_diversity_simple.json
+```
+
 You can override common options:
 
 ```bash
@@ -62,6 +70,24 @@ bash scripts/record_demo.sh outputs/runs/baseline_simple --max-steps 400
 
 Evaluation writes per-episode CSV and summary JSON under `metrics/`. The demo script writes a lightweight top-down GIF under `demo/`.
 
+Run cross-layout and cross-partner evaluation:
+
+```bash
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_simple \
+  --partner-run-dir outputs/runs/baseline_simple \
+  --layout simple --layout simple_tomato --layout small_corridor --layout random0 --layout random1 --layout unident_s \
+  --output-name zero_shot_layouts
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_simple \
+  --partner-run-dir outputs/runs/baseline_simple \
+  --partner-run-dir outputs/runs/baseline_seed11 \
+  --partner-run-dir outputs/runs/baseline_seed12 \
+  --layout simple \
+  --output-name partner_matrix
+```
+
+Matrix evaluation records unsupported or failing layout/partner combinations as `status=error` rows instead of aborting the whole sweep.
+
 ## Suggested Experiment Table
 
 | Run | Config | Purpose |
@@ -69,6 +95,7 @@ Evaluation writes per-episode CSV and summary JSON under `metrics/`. The demo sc
 | no shaping | `configs/no_shaping_simple.json` | Test sparse-reward difficulty |
 | default shaping | `configs/baseline_simple.json` | Course baseline for shaped rewards |
 | distance shaping | `configs/distance_shaping_simple.json` | Test whether extra dense guidance helps |
+| partner diversity | `configs/partner_diversity_simple.json` | Train one ego policy against several fixed partners |
 
 Useful report metrics:
 
