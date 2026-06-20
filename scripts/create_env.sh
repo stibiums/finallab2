@@ -3,6 +3,8 @@ set -euo pipefail
 
 ENV_NAME="${ENV_NAME:-overcooked-marl}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export PYTHONUNBUFFERED="${PYTHONUNBUFFERED:-1}"
+CONDA_RUN=(conda run --no-capture-output -n "$ENV_NAME")
 
 cd "$ROOT_DIR"
 
@@ -19,9 +21,9 @@ fi
 
 git submodule update --init --recursive
 
-conda run -n "$ENV_NAME" python -m pip install "pip<24" "setuptools==65.5.0" "wheel<0.40.0"
-conda run -n "$ENV_NAME" python -m pip install -r requirements.txt
-conda run -n "$ENV_NAME" python -m pip install --no-deps \
+"${CONDA_RUN[@]}" python -m pip install "pip<24" "setuptools==65.5.0" "wheel<0.40.0"
+"${CONDA_RUN[@]}" python -m pip install -r requirements.txt
+"${CONDA_RUN[@]}" python -m pip install --no-deps \
   -e external/PantheonRL \
   -e external/PantheonRL/overcookedgym/human_aware_rl/overcooked_ai \
   -e .

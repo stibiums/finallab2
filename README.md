@@ -51,6 +51,8 @@ You can override common options:
 bash scripts/train.sh configs/baseline_simple.json --run-name baseline_seed11 --seed 11 --timesteps 200000
 ```
 
+All shell scripts use `conda run --no-capture-output` and `PYTHONUNBUFFERED=1`, so training logs stream live instead of being buffered until the process exits.
+
 ## Evaluation And Demo
 
 ```bash

@@ -4,5 +4,7 @@ set -euo pipefail
 ENV_NAME="${ENV_NAME:-overcooked-marl}"
 RUN_DIR="${1:-outputs/runs/baseline_simple}"
 shift || true
+export PYTHONUNBUFFERED="${PYTHONUNBUFFERED:-1}"
+CONDA_RUN=(conda run --no-capture-output -n "$ENV_NAME")
 
-conda run -n "$ENV_NAME" python -m overcooked_project.evaluate --run-dir "$RUN_DIR" "$@"
+"${CONDA_RUN[@]}" python -m overcooked_project.evaluate --run-dir "$RUN_DIR" "$@"

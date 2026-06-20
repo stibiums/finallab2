@@ -4,5 +4,7 @@ set -euo pipefail
 ENV_NAME="${ENV_NAME:-overcooked-marl}"
 CONFIG="${1:-configs/baseline_simple.json}"
 shift || true
+export PYTHONUNBUFFERED="${PYTHONUNBUFFERED:-1}"
+CONDA_RUN=(conda run --no-capture-output -n "$ENV_NAME")
 
-conda run -n "$ENV_NAME" python -m overcooked_project.train --config "$CONFIG" "$@"
+"${CONDA_RUN[@]}" python -m overcooked_project.train --config "$CONFIG" "$@"
