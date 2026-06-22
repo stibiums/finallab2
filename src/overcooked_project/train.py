@@ -91,6 +91,7 @@ def train(config: dict) -> Path:
     summary = {
         "run_name": config["run_name"],
         "layout_name": config["layout_name"],
+        "layout_names": list(config.get("layout_names", [config["layout_name"]])),
         "total_timesteps": int(config["total_timesteps"]),
         "seed": int(config["seed"]),
         "elapsed_seconds": elapsed,

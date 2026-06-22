@@ -7,6 +7,7 @@
 - Environment: `OvercookedMultiEnv-v0` from PantheonRL / Overcooked-AI.
 - Baseline: two PPO agents trained with PantheonRL's simultaneous-agent interface.
 - Main ablation: no shaping vs default shaping vs distance shaping.
+- Follow-up experiments: partner diversity, zero-shot layout transfer, and multi-layout curriculum.
 - Outputs: trained models, TensorBoard logs, evaluation CSV/JSON, GIF demo.
 
 ## Setup
@@ -53,6 +54,14 @@ bash scripts/train.sh configs/baseline_simple.json --run-name baseline_seed12 --
 bash scripts/train_diverse.sh configs/partner_diversity_simple.json
 ```
 
+Train the first multi-layout curriculum:
+
+```bash
+bash scripts/train.sh configs/multi_layout_curriculum.json
+```
+
+This samples one layout per episode from `simple`, `small_corridor`, `random0`, and `random1`. Tomato layouts are excluded because this Overcooked-AI wrapper currently raises `KeyError: 'tomato'` when stepping tomato maps.
+
 You can override common options:
 
 ```bash
@@ -68,7 +77,11 @@ bash scripts/evaluate.sh outputs/runs/baseline_simple --episodes 20
 bash scripts/record_demo.sh outputs/runs/baseline_simple --max-steps 400
 ```
 
-Evaluation writes per-episode CSV and summary JSON under `metrics/`. The demo script writes a lightweight top-down GIF under `demo/`.
+Evaluation writes per-episode CSV and summary JSON under `metrics/`. The demo script writes a lightweight top-down GIF under `demo/`. For multi-layout runs, pass `--layout` to force the demo to a specific map:
+
+```bash
+bash scripts/record_demo.sh outputs/runs/multi_layout_curriculum --layout random0 --output-name random0_demo --max-steps 400
+```
 
 Run cross-layout and cross-partner evaluation:
 
@@ -84,6 +97,11 @@ bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_simple \
   --partner-run-dir outputs/runs/baseline_seed12 \
   --layout simple \
   --output-name partner_matrix
+
+bash scripts/evaluate_matrix.sh outputs/runs/multi_layout_curriculum \
+  --partner-run-dir outputs/runs/multi_layout_curriculum \
+  --layout simple --layout small_corridor --layout random0 --layout random1 --layout unident_s --layout simple_tomato \
+  --output-name zero_shot_layouts
 ```
 
 Matrix evaluation records unsupported or failing layout/partner combinations as `status=error` rows instead of aborting the whole sweep.
@@ -96,6 +114,7 @@ Matrix evaluation records unsupported or failing layout/partner combinations as 
 | default shaping | `configs/baseline_simple.json` | Course baseline for shaped rewards |
 | distance shaping | `configs/distance_shaping_simple.json` | Test whether extra dense guidance helps |
 | partner diversity | `configs/partner_diversity_simple.json` | Train one ego policy against several fixed partners |
+| multi-layout curriculum | `configs/multi_layout_curriculum.json` | Test whether naive episode-level layout mixing improves transfer |
 
 Useful report metrics:
 
@@ -107,4 +126,4 @@ Useful report metrics:
 
 ## Notes
 
-The local M4 machine is enough for smoke tests, debugging, plotting, and short runs. Use the 4060 Linux machine for long multi-seed experiments.
+The local M4 machine is enough for smoke tests, debugging, plotting, and short-to-medium runs. The 500k-step multi-layout run completed locally in about 249 seconds. Use the 4060 Linux machine for long multi-seed experiments.

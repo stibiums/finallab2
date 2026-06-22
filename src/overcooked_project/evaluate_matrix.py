@@ -64,6 +64,8 @@ def evaluate_matrix(
     for layout in layouts:
         layout_config = dict(config)
         layout_config["layout_name"] = layout
+        layout_config["layout_names"] = [layout]
+        layout_config.pop("layout_sampling_weights", None)
         for partner_run_dir in partner_run_dirs:
             base_row = {
                 "ego_run": ego_run_dir.name,

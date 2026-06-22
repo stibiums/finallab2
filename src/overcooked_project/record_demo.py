@@ -18,10 +18,16 @@ def record_demo(
     max_steps: int = 400,
     deterministic: bool = True,
     output_name: str = "demo",
+    layout: str | None = None,
 ) -> dict:
     register_envs()
     run_dir = Path(run_dir)
     config = load_json(run_dir / "config.resolved.json")
+    if layout is not None:
+        config = dict(config)
+        config["layout_name"] = layout
+        config["layout_names"] = [layout]
+        config.pop("layout_sampling_weights", None)
     demo_dir = run_dir / "demo"
     demo_dir.mkdir(parents=True, exist_ok=True)
 
@@ -56,6 +62,7 @@ def record_demo(
     )
     summary = {
         "gif_path": str(gif_path),
+        "layout_name": env.unwrapped.layout_name,
         "steps": steps,
         "total_reward": sum(rewards),
         "sparse_reward": sum(sparse_rewards),
@@ -73,6 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-steps", type=int, default=400)
     parser.add_argument("--stochastic", action="store_true", help="Use stochastic policy actions.")
     parser.add_argument("--output-name", default="demo")
+    parser.add_argument("--layout", help="Force a single layout for demo recording.")
     return parser
 
 
@@ -83,6 +91,7 @@ def main() -> None:
         max_steps=args.max_steps,
         deterministic=not args.stochastic,
         output_name=args.output_name,
+        layout=args.layout,
     )
 
 

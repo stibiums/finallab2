@@ -80,8 +80,14 @@ def run_dir_from_config(config: Mapping[str, Any]) -> Path:
 
 
 def env_config_from_config(config: Mapping[str, Any]) -> dict[str, Any]:
-    return {
+    env_config = {
         "layout_name": config["layout_name"],
         "horizon": int(config["horizon"]),
         "reward_shaping": dict(config["reward_shaping"]),
+        "seed": int(config["seed"]),
     }
+    if "layout_names" in config:
+        env_config["layout_names"] = list(config["layout_names"])
+    if "layout_sampling_weights" in config:
+        env_config["layout_sampling_weights"] = list(config["layout_sampling_weights"])
+    return env_config
