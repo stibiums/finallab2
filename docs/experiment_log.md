@@ -63,6 +63,20 @@ bash scripts/evaluate_matrix.sh outputs/runs/multi_layout_curriculum \
 
 bash scripts/record_demo.sh outputs/runs/multi_layout_curriculum --layout random0 --output-name random0_demo --max-steps 400
 bash scripts/record_demo.sh outputs/runs/multi_layout_curriculum --layout simple --output-name simple_demo --max-steps 400
+
+bash scripts/train_curriculum.sh configs/curriculum_simple_random0.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/curriculum_simple_random0 \
+  --partner-run-dir outputs/runs/curriculum_simple_random0 \
+  --layout simple --layout random0 --layout small_corridor --layout random1 --layout unident_s --layout simple_tomato \
+  --output-name zero_shot_layouts
+
+bash scripts/train.sh configs/baseline_random0.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random0 \
+  --partner-run-dir outputs/runs/baseline_random0 \
+  --layout random0 --layout simple --layout small_corridor --layout random1 --layout unident_s --layout simple_tomato \
+  --output-name zero_shot_layouts
 ```
 
 ## Run Summary
@@ -76,6 +90,8 @@ bash scripts/record_demo.sh outputs/runs/multi_layout_curriculum --layout simple
 | `baseline_seed12` | 12 | 200000 | 87.21 | 10.30 | 206.0 | 385.15 | - |
 | `partner_diversity_simple` | 20 | 200000 | 70.77 | 7.30 | 146.0 | 277.10 | 8.0 |
 | `multi_layout_curriculum` | 30 | 500000 | 249.45 | 0.00 | 0.0 | 6.25 | 0.0 |
+| `curriculum_simple_random0` | 40 | 300000 | 165.43 | 9.85 / 0.00 | 197.0 / 0.0 | 373.70 / 0.00 | 10.0 / 0.0 |
+| `baseline_random0` | 50 | 300000 | 127.26 | 0.85 | 17.0 | 47.70 | 0.0 |
 
 ## Step 1: Reward-Shaping Ablation
 
@@ -164,6 +180,55 @@ Fixed-layout self-play matrix:
 
 Conclusion: this first multi-layout curriculum did not solve layout generalization. It also regressed badly on `simple` compared with the single-layout baseline. The training curve reached high shaped reward near the end, but sparse delivery stayed almost zero. This suggests the current reward shaping and curriculum are teaching partial behaviors, not a reliable full delivery sequence.
 
+## Step 5: Staged Simple + Random0 Fine-Tuning
+
+This run loads `outputs/runs/baseline_simple`, fine-tunes on `simple + random0`, and evaluates both fixed layouts every 50k steps. The curriculum score is `min_soups_across_layouts + 0.05 * mean_soups_across_layouts`, so any improvement on the weaker layout is prioritized, with average soups as a tie-breaker. The best checkpoint is kept as `models/ego.zip` and `models/alt.zip`; the final checkpoint is saved separately.
+
+Training distribution:
+
+- `simple`: 0.8
+- `random0`: 0.2
+
+Curriculum checkpoints:
+
+| Trained steps | Simple soups | Random0 soups | Score |
+| ---: | ---: | ---: | ---: |
+| 0 | 7.50 | 0.00 | 0.1875 |
+| 50000 | 8.60 | 0.00 | 0.2150 |
+| 100000 | 3.15 | 0.00 | 0.0788 |
+| 150000 | 9.85 | 0.00 | 0.2463 |
+| 200000 | 9.55 | 0.00 | 0.2388 |
+| 250000 | 9.75 | 0.00 | 0.2438 |
+| 300000 | 9.85 | 0.00 | 0.2463 |
+
+Best checkpoint fixed-layout matrix:
+
+| Layout | Mean soups | Mean sparse reward | Mean episode reward | Status | Error |
+| --- | ---: | ---: | ---: | --- | --- |
+| `simple` | 9.55 | 191.0 | 360.40 | ok | |
+| `random0` | 0.00 | 0.0 | 0.00 | ok | |
+| `small_corridor` | 0.00 | 0.0 | 0.00 | ok | |
+| `random1` | 0.00 | 0.0 | 0.00 | ok | |
+| `unident_s` | 0.00 | 0.0 | 0.90 | ok | |
+| `simple_tomato` | - | - | - | error | `KeyError: 'tomato'` |
+
+Conclusion: staged fine-tuning from the `simple` expert improves `simple` from 7.5 to about 9.6-9.9 soups, but it still never opens sparse reward on `random0`. This means direct fine-tuning from the `simple` policy does not discover the `random0` delivery routine, even when `random0` appears in the training distribution.
+
+## Step 6: Random0 Single-Layout Diagnostic
+
+This run trains a new self-play specialist directly on `random0`.
+
+| Layout | Mean soups | Mean sparse reward | Mean episode reward | Status | Error |
+| --- | ---: | ---: | ---: | --- | --- |
+| `random0` | 0.85 | 17.0 | 47.70 | ok | |
+| `simple` | 0.00 | 0.0 | 3.60 | ok | |
+| `small_corridor` | 0.00 | 0.0 | 0.00 | ok | |
+| `random1` | 0.00 | 0.0 | 0.30 | ok | |
+| `unident_s` | 0.00 | 0.0 | 1.05 | ok | |
+| `simple_tomato` | - | - | - | error | `KeyError: 'tomato'` |
+
+Conclusion: `random0` is learnable with the current environment and default shaping, but it needs map-specific training. The problem is not that `random0` has no signal; the problem is that mixing it into a `simple` expert does not transfer the right behavior. The next optimization should use map specialists as curriculum anchors instead of expecting one expert to absorb a new layout by naive mixing.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -174,7 +239,9 @@ Conclusion: this first multi-layout curriculum did not solve layout generalizati
 6. Partner-diversity training helps a little against one alternate partner, but not enough to be considered a robust solution.
 7. Cross-layout transfer is essentially zero for single-layout policies.
 8. The first multi-layout curriculum is not yet a solution: it produces high shaped reward during training but almost no sparse reward in evaluation.
-9. A useful next improvement should directly target sparse delivery reliability, for example with staged curriculum, better reward shaping around soup completion/delivery, or layout-specific fine-tuning before mixing layouts.
+9. Conservative `simple + random0` fine-tuning improves `simple`, but it still does not unlock `random0`.
+10. `random0` is learnable as a single-layout specialist, reaching 0.85 soups after 300k steps.
+11. Cross-layout capability is currently best treated as a composition problem over specialists, not as a simple zero-shot or naive mixed-training problem.
 
 ## Artifacts
 
@@ -189,9 +256,17 @@ Conclusion: this first multi-layout curriculum did not solve layout generalizati
   - `outputs/runs/baseline_simple/metrics/zero_shot_layouts.csv`
   - `outputs/runs/partner_diversity_simple/metrics/zero_shot_layouts.csv`
   - `outputs/runs/multi_layout_curriculum/metrics/zero_shot_layouts.csv`
+  - `outputs/runs/curriculum_simple_random0/metrics/zero_shot_layouts.csv`
+  - `outputs/runs/baseline_random0/metrics/zero_shot_layouts.csv`
 - Multi-layout curriculum run:
   - `outputs/runs/multi_layout_curriculum/metrics/train_summary.json`
   - `outputs/runs/multi_layout_curriculum/metrics/eval_metrics.json`
+- Staged curriculum run:
+  - `outputs/runs/curriculum_simple_random0/metrics/curriculum_eval.csv`
+  - `outputs/runs/curriculum_simple_random0/metrics/train_summary.json`
+- Random0 specialist run:
+  - `outputs/runs/baseline_random0/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_random0/metrics/zero_shot_layouts.csv`
 - Demos:
   - `outputs/runs/baseline_simple/demo/demo.gif`
   - `outputs/runs/no_shaping_simple/demo/demo.gif`
@@ -199,13 +274,19 @@ Conclusion: this first multi-layout curriculum did not solve layout generalizati
   - `outputs/runs/partner_diversity_simple/demo/demo.gif`
   - `outputs/runs/multi_layout_curriculum/demo/random0_demo.gif`
   - `outputs/runs/multi_layout_curriculum/demo/simple_demo.gif`
+  - `outputs/runs/curriculum_simple_random0/demo/simple_best_demo.gif`
+  - `outputs/runs/curriculum_simple_random0/demo/random0_best_demo.gif`
+  - `outputs/runs/baseline_random0/demo/random0_demo.gif`
+  - `outputs/runs/baseline_random0/demo/simple_transfer_demo.gif`
 
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
 
-1. Staged curriculum: train first on one solvable layout until sparse delivery is reliable, then introduce one additional layout at a time.
-2. Stronger partner-diversity: include held-out partner seeds and evaluate against them, not only against training partners.
-3. Reward redesign: add or tune shaping around pot progress, dish pickup, and delivery so high shaped reward correlates with soups delivered.
-4. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.
-5. Report framing: use default shaping baseline as the reliable baseline, then present sparse reward failure, partner overfitting, zero-shot failure, and naive multi-layout failure as motivation for a stronger curriculum method.
+1. Train stronger layout specialists first, starting with a longer or better-shaped `random0` expert.
+2. Evaluate a simple layout-router baseline: choose the `simple` expert on `simple`, choose the `random0` expert on `random0`, and report it as a specialist upper bound.
+3. Try reverse curriculum: initialize from `baseline_random0`, then introduce `simple` with a small sampling weight, to see whether the easier layout can be added without destroying `random0`.
+4. Add layout-conditioning or policy selection before claiming one unified policy generalizes.
+5. Stronger partner-diversity: include held-out partner seeds and evaluate against them, not only against training partners.
+6. Reward redesign: add or tune shaping around pot progress, dish pickup, and delivery so high shaped reward correlates with soups delivered.
+7. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.

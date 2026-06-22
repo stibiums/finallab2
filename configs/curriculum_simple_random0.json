@@ -1,0 +1,51 @@
+{
+  "run_name": "curriculum_simple_random0",
+  "init_run_dir": "outputs/runs/baseline_simple",
+  "env_id": "OvercookedShapedMultiEnv-v0",
+  "layout_name": "simple",
+  "layout_names": [
+    "simple",
+    "random0"
+  ],
+  "layout_sampling_weights": [
+    0.8,
+    0.2
+  ],
+  "eval_layouts": [
+    "simple",
+    "random0"
+  ],
+  "curriculum_eval_interval": 50000,
+  "horizon": 400,
+  "seed": 40,
+  "device": "auto",
+  "total_timesteps": 300000,
+  "eval_episodes": 20,
+  "deterministic_eval": true,
+  "reward_shaping": {
+    "PLACEMENT_IN_POT_REW": 3,
+    "DISH_PICKUP_REWARD": 3,
+    "SOUP_PICKUP_REWARD": 5,
+    "DISH_DISP_DISTANCE_REW": 0,
+    "POT_DISTANCE_REW": 0,
+    "SOUP_DISTANCE_REW": 0
+  },
+  "ego_config": {
+    "n_steps": 1024,
+    "batch_size": 256,
+    "learning_rate": 0.0001,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "ent_coef": 0.01,
+    "verbose": 1
+  },
+  "alt_config": {
+    "n_steps": 1024,
+    "batch_size": 256,
+    "learning_rate": 0.0001,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "ent_coef": 0.01,
+    "verbose": 0
+  }
+}

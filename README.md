@@ -62,6 +62,20 @@ bash scripts/train.sh configs/multi_layout_curriculum.json
 
 This samples one layout per episode from `simple`, `small_corridor`, `random0`, and `random1`. Tomato layouts are excluded because this Overcooked-AI wrapper currently raises `KeyError: 'tomato'` when stepping tomato maps.
 
+Fine-tune from an existing checkpoint with staged curriculum evaluation:
+
+```bash
+bash scripts/train_curriculum.sh configs/curriculum_simple_random0.json
+```
+
+This loads `outputs/runs/baseline_simple`, trains on `simple + random0`, evaluates both fixed layouts every 50k steps, and keeps the best checkpoint as `models/ego.zip` / `models/alt.zip`. The final checkpoint is also saved separately as `final_ego.zip` / `final_alt.zip`.
+
+Train a single-layout `random0` diagnostic expert:
+
+```bash
+bash scripts/train.sh configs/baseline_random0.json
+```
+
 You can override common options:
 
 ```bash
@@ -115,6 +129,8 @@ Matrix evaluation records unsupported or failing layout/partner combinations as 
 | distance shaping | `configs/distance_shaping_simple.json` | Test whether extra dense guidance helps |
 | partner diversity | `configs/partner_diversity_simple.json` | Train one ego policy against several fixed partners |
 | multi-layout curriculum | `configs/multi_layout_curriculum.json` | Test whether naive episode-level layout mixing improves transfer |
+| staged simple+random0 | `configs/curriculum_simple_random0.json` | Fine-tune from `simple` baseline while periodically evaluating both layouts |
+| random0 expert | `configs/baseline_random0.json` | Test whether `random0` is learnable as a single-layout specialist |
 
 Useful report metrics:
 
