@@ -104,6 +104,8 @@ def trace_episode(
 
         row_sparse_reward = float(info.get("sparse_reward", 0.0))
         row_shaped_reward = float(info.get("shaped_reward", 0.0))
+        row_base_shaped_reward = float(info.get("base_shaped_reward", row_shaped_reward))
+        row_event_shaped_reward = float(info.get("event_shaped_reward", 0.0))
         row_reward = float(reward)
         total_reward += row_reward
         sparse_reward += row_sparse_reward
@@ -119,6 +121,8 @@ def trace_episode(
                 "reward": row_reward,
                 "sparse_reward": row_sparse_reward,
                 "shaped_reward": row_shaped_reward,
+                "base_shaped_reward": row_base_shaped_reward,
+                "event_shaped_reward": row_event_shaped_reward,
                 "done": bool(done),
                 "before": before,
                 "after": after,
@@ -134,6 +138,8 @@ def trace_episode(
             "reward": row["reward"],
             "sparse_reward": row["sparse_reward"],
             "shaped_reward": row["shaped_reward"],
+            "base_shaped_reward": row["base_shaped_reward"],
+            "event_shaped_reward": row["event_shaped_reward"],
             "joint_action_text": row["joint_action_text"],
             "after": row["after"],
         }

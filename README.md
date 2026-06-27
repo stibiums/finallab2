@@ -92,6 +92,14 @@ bash scripts/train.sh configs/baseline_random1.json
 bash scripts/train.sh configs/baseline_unident_s.json
 ```
 
+Train structured `small_corridor` shaping diagnostics:
+
+```bash
+bash scripts/train.sh configs/small_corridor_structured_shaping_v1.json
+bash scripts/train.sh configs/small_corridor_structured_shaping_v2.json
+bash scripts/train.sh configs/small_corridor_structured_shaping_v3.json
+```
+
 Train held-out hard-layout partner seeds:
 
 ```bash
@@ -128,6 +136,7 @@ bash scripts/trace_episode.sh outputs/runs/baseline_small_corridor --layout smal
 ```
 
 Trace files are written under `outputs/runs/<run_name>/traces/` and include per-step actions, rewards, player positions, held objects, world objects, and state strings.
+For configs with `event_reward_shaping`, traces also split shaped reward into base Overcooked shaping and custom event/progress shaping.
 
 Run cross-layout and cross-partner evaluation:
 
@@ -212,6 +221,9 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | random0 long held-out seed | `configs/baseline_random0_long_seed52.json` | Improve the `random0` route and test hard-layout partner compatibility |
 | small corridor expert | `configs/baseline_small_corridor.json` | Test whether `small_corridor` is learnable with default specialist training |
 | small corridor shaping | `configs/small_corridor_shaping_v1.json` | Test whether distance shaping opens the failed `small_corridor` layout |
+| small corridor structured shaping v1 | `configs/small_corridor_structured_shaping_v1.json` | Add wrapper-level pickup and progress shaping after the original distance reward path proved inactive |
+| small corridor structured shaping v2 | `configs/small_corridor_structured_shaping_v2.json` | Add orientation-aware progress and switch empty-agent target from onion source to dish source after pot progress |
+| small corridor structured shaping v3 | `configs/small_corridor_structured_shaping_v3.json` | Add anti-farming guards; reaches soup pickup but still fails final serving |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |

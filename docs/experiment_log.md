@@ -180,6 +180,27 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
   --route unident_s=outputs/runs/baseline_unident_s \
   --output-dir outputs/runs/router_onion_layouts_seed52_random0 \
   --output-name router_eval
+
+bash scripts/train.sh configs/small_corridor_structured_shaping_v1.json
+bash scripts/train.sh configs/small_corridor_structured_shaping_v2.json
+bash scripts/train.sh configs/small_corridor_structured_shaping_v3.json
+
+bash scripts/trace_episode.sh outputs/runs/small_corridor_structured_shaping_v3 \
+  --layout small_corridor \
+  --output-name small_corridor_structured_trace \
+  --max-steps 400
+
+conda run --no-capture-output -n overcooked-marl python -m overcooked_project.evaluate \
+  --run-dir outputs/runs/small_corridor_structured_shaping_v3 \
+  --episodes 20 \
+  --stochastic \
+  --output-name eval_stochastic
+
+bash scripts/trace_episode.sh outputs/runs/small_corridor_structured_shaping_v3 \
+  --layout small_corridor \
+  --output-name small_corridor_structured_stochastic_trace \
+  --max-steps 400 \
+  --stochastic
 ```
 
 ## Run Summary
@@ -201,6 +222,9 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
 | `router_simple_random0_long` | - | 0 | - | 9.55 / 6.30 | 191.0 / 126.0 | 360.40 / 244.45 | - |
 | `baseline_small_corridor` | 60 | 300000 | 118.54 | 0.00 | 0.0 | 0.00 | - |
 | `small_corridor_shaping_v1` | 61 | 300000 | 116.26 | 0.00 | 0.0 | 0.00 | - |
+| `small_corridor_structured_shaping_v1` | 62 | 300000 | 120.12 | 0.00 | 0.0 | 134.15 | - |
+| `small_corridor_structured_shaping_v2` | 63 | 300000 | 120.98 | 0.00 | 0.0 | 18.41 | - |
+| `small_corridor_structured_shaping_v3` | 64 | 300000 | 122.02 | 0.00 | 0.0 | 93.46 | - |
 | `baseline_random1` | 70 | 300000 | 116.94 | 5.80 | 116.0 | 225.10 | 6.0 |
 | `baseline_random1_seed71` | 71 | 300000 | 116.99 | 5.20 | 104.0 | 202.80 | - |
 | `baseline_unident_s` | 80 | 300000 | 118.35 | 12.70 | 254.0 | 481.25 | 13.0 |
@@ -522,6 +546,47 @@ The supported-layout average improves from 8.59 to 9.23 soups, while the support
 
 Conclusion: partner robustness is layout-specific, not guaranteed by good self-play. `unident_s` is robust across two strong seeds, `random1` is strongly partner-brittle, and `random0` is asymmetric: the new seed-52 ego is robust to the old partner, but the old ego is not robust to the new partner. For the main router result, `baseline_random0_long_seed52` should replace `baseline_random0_long`.
 
+## Step 12: Structured Small Corridor Shaping
+
+This step tests a more explicit `small_corridor` shaping signal after the trace diagnosis showed that the original specialists did not discover useful pickups or placements. The first important implementation finding is that the upstream Overcooked-AI distance reward path is not active in this checkout: `calculate_distance_based_shaped_reward` exists, but the call in `overcooked_mdp.py` is commented out. Therefore, the earlier `small_corridor_shaping_v1` config did not actually add distance reward despite setting `DISH_DISP_DISTANCE_REW`, `POT_DISTANCE_REW`, and `SOUP_DISTANCE_REW`.
+
+Code changes:
+
+- Added optional `event_reward_shaping` to the environment wrapper without changing default configs.
+- Added source-pickup reward, pot-placement reward, and layout-aware distance-progress reward.
+- Added orientation-aware interaction distance and a dynamic empty-handed target that switches from onion source to dish source once a pot has enough ingredients.
+- Added anti-farming switches to skip counter pickup rewards and skip target-switch progress on held-object changes.
+- Extended traces with `base_shaped_reward` and `event_shaped_reward` so shaped reward can be audited.
+
+Training setup:
+
+| Run | Seed | Shaping idea | Anti-farming | Timesteps |
+| --- | ---: | --- | --- | ---: |
+| `small_corridor_structured_shaping_v1` | 62 | pickup reward plus positive distance progress to onion/dish/pot/serve | no | 300000 |
+| `small_corridor_structured_shaping_v2` | 63 | orientation-aware distance and dish target after pot has 3 onions | no | 300000 |
+| `small_corridor_structured_shaping_v3` | 64 | v2 plus source-only pickup reward and no progress reward on held-object changes | yes | 300000 |
+
+Evaluation summary:
+
+| Run | Deterministic soups | Deterministic episode reward | Stochastic soups | Stochastic episode reward | Interpretation |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `small_corridor_structured_shaping_v1` | 0.00 | 134.15 | 0.00 | 251.44 | High shaped reward, but no pot progress; deterministic policy mostly spams `interact`. |
+| `small_corridor_structured_shaping_v2` | 0.00 | 18.41 | 0.00 | 389.82 | Deterministic policy collapses to moving right; stochastic policy farms onion/progress reward without soup delivery. |
+| `small_corridor_structured_shaping_v3` | 0.00 | 93.46 | 0.00 | 95.74 | Cleaner reward after anti-farming; reaches soup pickup but still never serves soup. |
+
+Trace diagnosis:
+
+| Trace | Total reward | Base shaped | Event shaped | Sparse reward | Key behavior |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `small_corridor_structured_shaping_v1/traces/small_corridor_structured_trace.json` | 89.3 | - | - | 0.0 | Deterministic ego uses `interact` 398 times; dishes appear, but no pot or soup states appear. |
+| `small_corridor_structured_shaping_v1/traces/small_corridor_structured_stochastic_trace.json` | 208.9 | - | - | 0.0 | Stochastic policy can pick up onion and dish, but still never creates pot progress. |
+| `small_corridor_structured_shaping_v2/traces/small_corridor_structured_trace.json` | 0.0 | 0.0 | 0.0 | 0.0 | Deterministic ego moves right for all 400 steps. |
+| `small_corridor_structured_shaping_v2/traces/small_corridor_structured_stochastic_trace_v2breakdown.json` | 451.6 | 0.0 | 451.6 | 0.0 | Reward is entirely custom event shaping; both agents pick onions but do not produce soup. |
+| `small_corridor_structured_shaping_v3/traces/small_corridor_structured_trace.json` | 98.9 | 68.0 | 30.9 | 0.0 | Both agents pick onions, pots reach 3 onions, partner picks up soup at step 93, but soup is dropped or carried around the top corridor instead of served. |
+| `small_corridor_structured_shaping_v3/traces/small_corridor_structured_stochastic_trace.json` | 89.5 | 57.0 | 32.5 | 0.0 | Stochastic policy also reaches soup pickup at step 82, then fails the long delivery to the left-side serving station. |
+
+Conclusion: structured shaping improves the failure mode, but it does not solve `small_corridor`. The bottleneck moved from "no useful subgoal" to "soup pickup without serving." Continuing to tune generic reward coefficients is likely low-yield. The next attempt should be a delivery-stage curriculum or scripted warm start, for example by training from states where a soup has already been picked up, collecting scripted trajectories for the final delivery segment, or using behavior cloning/subtask pretraining before PPO.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -538,15 +603,18 @@ Conclusion: partner robustness is layout-specific, not guaranteed by good self-p
 12. Increasing `random0` specialist training to 800k steps improves `random0` from 0.85 to 6.30 soups.
 13. The updated router reaches 9.55 soups on `simple` and 6.30 on `random0`, so specialist routing is now a strong practical baseline.
 14. Cross-layout capability is currently best treated as a composition problem over specialists, not as a simple zero-shot or naive mixed-training problem.
-15. `small_corridor` is the clearest remaining failure: both the default 300k specialist and the distance-shaping variant stay at 0.00 soups and 0.0 shaped/sparse evaluation reward.
+15. `small_corridor` is the clearest remaining failure: default training, inactive-distance shaping, and three structured shaping variants all stay at 0.00 soups.
 16. `random1` is learnable as a 300k specialist, reaching 5.80 soups.
 17. `unident_s` is the strongest current hard-layout specialist, reaching 12.70 soups.
 18. The expanded onion router reaches 8.59 supported-layout average soups and 5.80 supported-layout minimum soups over four routed layouts, while explicitly skipping `small_corridor` and tomato layouts.
-19. Trace diagnosis shows the `small_corridor` policies do not reach the first useful subgoal: default training never uses ego `interact`, and distance shaping causes many interactions but no successful pickup or placement.
+19. Initial trace diagnosis shows why the first `small_corridor` runs failed: default training never uses ego `interact`, and inactive-distance shaping causes many interactions but no successful pickup or placement.
 20. A second 800k `random0` seed (`baseline_random0_long_seed52`) improves the `random0` specialist from 6.30 to 8.85 soups.
 21. Replacing the `random0` route with `baseline_random0_long_seed52` improves the routed supported-layout average from 8.59 to 9.23 soups.
 22. Hard-layout partner robustness is uneven: `unident_s` is robust across seeds, `random1` collapses under held-out partners, and `random0` shows asymmetric compatibility.
 23. Self-play score alone is not enough evidence for general coordination; cross-play matrices are needed for every claimed robust specialist.
+24. The upstream Overcooked-AI distance shaping parameters are inactive in this checkout because the distance-reward call is commented out, so layout-specific progress shaping has to be implemented in the wrapper if we want it to affect training.
+25. Structured `small_corridor` shaping can move the agents from "no useful subgoal" to "pot progress and soup pickup," but the delivery leg to the left-side serving station still fails.
+26. The next `small_corridor` optimization should focus on delivery-stage warm starts, scripted subtask trajectories, or behavior-cloning pretraining instead of more generic reward coefficient tuning.
 
 ## Artifacts
 
@@ -586,6 +654,19 @@ Conclusion: partner robustness is layout-specific, not guaranteed by good self-p
   - `outputs/runs/baseline_random1_seed71/metrics/partner_matrix_hard_random1.csv`
   - `outputs/runs/baseline_unident_s/metrics/partner_matrix_hard_unident_s.csv`
   - `outputs/runs/baseline_unident_s_seed81/metrics/partner_matrix_hard_unident_s.csv`
+- Structured `small_corridor` runs:
+  - `outputs/runs/small_corridor_structured_shaping_v1/metrics/eval_metrics.json`
+  - `outputs/runs/small_corridor_structured_shaping_v1/metrics/eval_stochastic.json`
+  - `outputs/runs/small_corridor_structured_shaping_v1/traces/small_corridor_structured_trace.json`
+  - `outputs/runs/small_corridor_structured_shaping_v1/traces/small_corridor_structured_stochastic_trace.json`
+  - `outputs/runs/small_corridor_structured_shaping_v2/metrics/eval_metrics.json`
+  - `outputs/runs/small_corridor_structured_shaping_v2/metrics/eval_stochastic.json`
+  - `outputs/runs/small_corridor_structured_shaping_v2/traces/small_corridor_structured_trace.json`
+  - `outputs/runs/small_corridor_structured_shaping_v2/traces/small_corridor_structured_stochastic_trace_v2breakdown.json`
+  - `outputs/runs/small_corridor_structured_shaping_v3/metrics/eval_metrics.json`
+  - `outputs/runs/small_corridor_structured_shaping_v3/metrics/eval_stochastic.json`
+  - `outputs/runs/small_corridor_structured_shaping_v3/traces/small_corridor_structured_trace.json`
+  - `outputs/runs/small_corridor_structured_shaping_v3/traces/small_corridor_structured_stochastic_trace.json`
 - Phase 2 specialist runs:
   - `outputs/runs/baseline_small_corridor/metrics/eval_metrics.json`
   - `outputs/runs/baseline_small_corridor/metrics/zero_shot_layouts.csv`

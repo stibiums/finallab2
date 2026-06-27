@@ -16,7 +16,7 @@ Key results so far:
 | `random0` specialist | 8.85 soups | A second 800k seed makes `random0` stronger and useful. |
 | `random1` specialist | 5.80 soups | The default 300k specialist is usable. |
 | `unident_s` specialist | 12.70 soups | This is the strongest current hard-layout specialist. |
-| `small_corridor` specialist | 0.00 soups | Default and distance-shaping specialists both fail. |
+| `small_corridor` specialist | 0.00 soups | Default, inactive-distance, and structured shaping variants still fail; v3 reaches soup pickup but not serving. |
 | naive multi-layout PPO | 0.00 soups on most maps | Simple layout mixing is not enough. |
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
 | improved onion router | 9.23 average soups, 5.80 min soups | Specialist composition is currently the strongest route over supported layouts. |
@@ -124,7 +124,10 @@ Completed results:
 | Run | Layout | Timesteps | Mean soups | Mean sparse reward | Decision |
 | --- | --- | ---: | ---: | ---: | --- |
 | `baseline_small_corridor` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; do not route. |
-| `small_corridor_shaping_v1` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; distance shaping did not help. |
+| `small_corridor_shaping_v1` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; upstream distance reward path is inactive in this checkout. |
+| `small_corridor_structured_shaping_v1` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; shaped reward rises but no pot progress. |
+| `small_corridor_structured_shaping_v2` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; stochastic policy farms onion/progress reward without delivery. |
+| `small_corridor_structured_shaping_v3` | `small_corridor` | 300000 | 0.00 | 0.0 | Partial progress; reaches soup pickup but still fails serving. |
 | `baseline_random1` | `random1` | 300000 | 5.80 | 116.0 | Success; add to router. |
 | `baseline_unident_s` | `unident_s` | 300000 | 12.70 | 254.0 | Success; add to router. |
 
@@ -281,7 +284,7 @@ For every new experiment:
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| `small_corridor` remains weak | Full layout coverage stays incomplete | Try structured curriculum, scripted warm start, or stronger layout-specific shaping |
+| `small_corridor` remains weak | Full layout coverage stays incomplete | Try delivery-stage curriculum, scripted warm start, or behavior-cloning/subtask pretraining |
 | Shaped reward rises without sparse reward | Misleading training curves | Always report soups delivered and sparse reward |
 | Tomato layouts keep failing | Coverage gap | Exclude tomato from main claims or patch featurizer as separate engineering work |
 | Partner overfitting | Self-play results look stronger than they are | Include partner matrix and held-out seeds |
@@ -291,8 +294,8 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Use the `small_corridor` traces to design a structured fix: the current policies never reach a useful pickup/place subgoal.
-2. Try a more structured `small_corridor` approach: curriculum, scripted warm start, or stronger layout-specific shaping.
+1. Build a delivery-stage `small_corridor` warm start or curriculum: structured shaping v3 reaches soup pickup but not the serving station.
+2. Collect or script short `small_corridor` subtask trajectories for soup delivery, then use them as behavior-cloning data or PPO initialization.
 3. Use `router_onion_layouts_seed52_random0` as the main practical baseline for the report.
 4. Start assembling the report tables and demo package from `docs/experiment_log.md` and the saved GIFs.
 5. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.

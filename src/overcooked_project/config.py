@@ -90,4 +90,6 @@ def env_config_from_config(config: Mapping[str, Any]) -> dict[str, Any]:
         env_config["layout_names"] = list(config["layout_names"])
     if "layout_sampling_weights" in config:
         env_config["layout_sampling_weights"] = list(config["layout_sampling_weights"])
+    if "event_reward_shaping" in config:
+        env_config["event_reward_shaping"] = dict(config["event_reward_shaping"])
     return env_config

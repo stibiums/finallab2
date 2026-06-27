@@ -1,0 +1,60 @@
+{
+  "run_name": "small_corridor_structured_shaping_v2",
+  "env_id": "OvercookedShapedMultiEnv-v0",
+  "layout_name": "small_corridor",
+  "horizon": 400,
+  "seed": 63,
+  "device": "auto",
+  "total_timesteps": 300000,
+  "eval_episodes": 20,
+  "reward_shaping": {
+    "PLACEMENT_IN_POT_REW": 3,
+    "DISH_PICKUP_REWARD": 3,
+    "SOUP_PICKUP_REWARD": 5,
+    "DISH_DISP_DISTANCE_REW": 0,
+    "POT_DISTANCE_REW": 0,
+    "SOUP_DISTANCE_REW": 0
+  },
+  "event_reward_shaping": {
+    "ONION_PICKUP_REWARD": 1.0,
+    "DISH_PICKUP_REWARD": 0.0,
+    "POT_PLACEMENT_REWARD": 0.0,
+    "DISTANCE_PROGRESS_REWARD": 0.1,
+    "DISTANCE_PROGRESS_POSITIVE_ONLY": true,
+    "INCLUDE_ORIENTATION_IN_DISTANCE": true,
+    "DISH_TARGET_MIN_POT_ITEMS": 3,
+    "EMPTY_TARGET_TERRAINS": [
+      "O"
+    ],
+    "READY_EMPTY_TARGET_TERRAINS": [
+      "D"
+    ],
+    "HELD_ITEM_TARGET_TERRAINS": [
+      "P"
+    ],
+    "HELD_DISH_TARGET_TERRAINS": [
+      "P"
+    ],
+    "HELD_SOUP_TARGET_TERRAINS": [
+      "S"
+    ]
+  },
+  "ego_config": {
+    "n_steps": 1024,
+    "batch_size": 256,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "ent_coef": 0.01,
+    "verbose": 1
+  },
+  "alt_config": {
+    "n_steps": 1024,
+    "batch_size": 256,
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "ent_coef": 0.01,
+    "verbose": 0
+  }
+}
