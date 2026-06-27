@@ -113,6 +113,14 @@ Evaluation writes per-episode CSV and summary JSON under `metrics/`. The demo sc
 bash scripts/record_demo.sh outputs/runs/multi_layout_curriculum --layout random0 --output-name random0_demo --max-steps 400
 ```
 
+Trace a single episode for debugging:
+
+```bash
+bash scripts/trace_episode.sh outputs/runs/baseline_small_corridor --layout small_corridor --output-name small_corridor_trace --max-steps 400
+```
+
+Trace files are written under `outputs/runs/<run_name>/traces/` and include per-step actions, rewards, player positions, held objects, world objects, and state strings.
+
 Run cross-layout and cross-partner evaluation:
 
 ```bash

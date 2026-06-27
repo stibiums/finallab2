@@ -131,6 +131,10 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
 
 bash scripts/record_demo.sh outputs/runs/baseline_random1 --layout random1 --output-name random1_demo --max-steps 400
 bash scripts/record_demo.sh outputs/runs/baseline_unident_s --layout unident_s --output-name unident_s_demo --max-steps 400
+
+bash scripts/trace_episode.sh outputs/runs/baseline_small_corridor --layout small_corridor --output-name small_corridor_trace --max-steps 400
+bash scripts/trace_episode.sh outputs/runs/small_corridor_shaping_v1 --layout small_corridor --output-name small_corridor_shaping_trace --max-steps 400
+bash scripts/trace_episode.sh outputs/runs/baseline_random1 --layout random1 --output-name random1_trace --max-steps 400
 ```
 
 ## Run Summary
@@ -395,6 +399,36 @@ The supported-layout average is 8.59 soups and the supported-layout minimum is 5
 
 Conclusion: Phase 2 strongly supports the specialist-routing story. `random1` and `unident_s` are learnable with the same 300k default PPO setup, while `small_corridor` remains the hard unresolved layout even after adding simple distance shaping. The router now covers four useful layouts with nonzero sparse reward, but the project should be honest that `small_corridor` still needs a different optimization strategy.
 
+## Step 10: Small Corridor Trace Diagnosis
+
+This step adds a lightweight episode-tracing tool and compares two failed `small_corridor` policies against a successful `random1` specialist. The trace records actions, rewards, player positions, held objects, world objects, and text-state snapshots for each step.
+
+Trace commands:
+
+```bash
+bash scripts/trace_episode.sh outputs/runs/baseline_small_corridor --layout small_corridor --output-name small_corridor_trace --max-steps 400
+bash scripts/trace_episode.sh outputs/runs/small_corridor_shaping_v1 --layout small_corridor --output-name small_corridor_shaping_trace --max-steps 400
+bash scripts/trace_episode.sh outputs/runs/baseline_random1 --layout random1 --output-name random1_trace --max-steps 400
+```
+
+Trace summary:
+
+| Trace | Reward events | First reward step | Total reward | Sparse reward | Soups | Key behavior |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `baseline_small_corridor/traces/small_corridor_trace.json` | 0 | - | 0.0 | 0.0 | 0.0 | Ego only moves left/down; no ego `interact`; final state has no held objects and no world objects. |
+| `small_corridor_shaping_v1/traces/small_corridor_shaping_trace.json` | 0 | - | 0.0 | 0.0 | 0.0 | Ego uses `interact` 219 times, but still never picks up or places an object. |
+| `baseline_random1/traces/random1_trace.json` | 37 | 7 | 227.0 | 120.0 | 6.0 | Successful policy gets shaped reward by step 7 and completes 6 soups. |
+
+Action-count details:
+
+| Trace | Ego action counts |
+| --- | --- |
+| `baseline_small_corridor` | `(-1, 0)`: 118, `(0, 1)`: 282 |
+| `small_corridor_shaping_v1` | `interact`: 219, `(0, 0)`: 117, `(-1, 0)`: 44, `(0, -1)`: 20 |
+| `baseline_random1` | `(-1, 0)`: 79, `(0, -1)`: 102, `(0, 1)`: 84, `(1, 0)`: 47, `interact`: 87, `(0, 0)`: 1 |
+
+Conclusion: the `small_corridor` failure happens before the soup-delivery chain even begins. The default policy never interacts, while the distance-shaping policy interacts frequently but not at useful stations. This points to an exploration/subgoal-discovery problem, not merely insufficient final-task reward. The next `small_corridor` attempt should use a more structured approach: scripted warm start, curriculum over starting positions/subtasks, or a stronger layout-specific shaping signal around first valid pickup and first valid placement.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -415,6 +449,7 @@ Conclusion: Phase 2 strongly supports the specialist-routing story. `random1` an
 16. `random1` is learnable as a 300k specialist, reaching 5.80 soups.
 17. `unident_s` is the strongest current hard-layout specialist, reaching 12.70 soups.
 18. The expanded onion router reaches 8.59 supported-layout average soups and 5.80 supported-layout minimum soups over four routed layouts, while explicitly skipping `small_corridor` and tomato layouts.
+19. Trace diagnosis shows the `small_corridor` policies do not reach the first useful subgoal: default training never uses ego `interact`, and distance shaping causes many interactions but no successful pickup or placement.
 
 ## Artifacts
 
@@ -479,6 +514,10 @@ Conclusion: Phase 2 strongly supports the specialist-routing story. `random1` an
   - `outputs/runs/baseline_random0_long/demo/random0_long_demo.gif`
   - `outputs/runs/baseline_random1/demo/random1_demo.gif`
   - `outputs/runs/baseline_unident_s/demo/unident_s_demo.gif`
+- Episode traces:
+  - `outputs/runs/baseline_small_corridor/traces/small_corridor_trace.json`
+  - `outputs/runs/small_corridor_shaping_v1/traces/small_corridor_shaping_trace.json`
+  - `outputs/runs/baseline_random1/traces/random1_trace.json`
 
 ## Next Experiments
 

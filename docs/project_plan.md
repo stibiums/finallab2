@@ -266,7 +266,7 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Diagnose `small_corridor` with trajectory/demo inspection and environment-state traces.
+1. Use the `small_corridor` traces to design a structured fix: the current policies never reach a useful pickup/place subgoal.
 2. Try a more structured `small_corridor` approach: curriculum, scripted warm start, or stronger layout-specific shaping.
 3. Build partner-generalization matrices for `baseline_random0_long`, `baseline_random1`, and `baseline_unident_s`.
 4. Use `router_onion_layouts` as the main practical baseline for the report.
