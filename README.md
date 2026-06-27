@@ -115,6 +115,30 @@ bash scripts/collect_delivery_demos.sh \
   --output outputs/demos/small_corridor_delivery_scripted.json
 ```
 
+Train a delivery behavior-cloning policy from the scripted demonstrations:
+
+```bash
+bash scripts/train_delivery_bc.sh \
+  --run-name small_corridor_delivery_bc_from_v3 \
+  --epochs 40 \
+  --batch-size 128 \
+  --learning-rate 0.001
+```
+
+Check the delivery BC policy on warm-start and standard-start evaluation:
+
+```bash
+bash scripts/evaluate.sh outputs/runs/small_corridor_delivery_bc_from_v3 \
+  --episodes 20 \
+  --output-name eval_delivery_warmstart
+
+bash scripts/evaluate.sh outputs/runs/small_corridor_delivery_bc_from_v3 \
+  --episodes 20 \
+  --standard-start \
+  --horizon 400 \
+  --output-name eval_standard_start_h400
+```
+
 Train held-out hard-layout partner seeds:
 
 ```bash
@@ -241,6 +265,7 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | small corridor structured shaping v3 | `configs/small_corridor_structured_shaping_v3.json` | Add anti-farming guards; reaches soup pickup but still fails final serving |
 | small corridor delivery warm start | `configs/small_corridor_delivery_warmstart_from_v3.json` | Continue from structured v3 on soup-held delivery states; PPO still fails sparse delivery |
 | scripted delivery demos | `scripts/collect_delivery_demos.sh` | Generate clean final-delivery trajectories for later behavior cloning |
+| delivery behavior cloning | `scripts/train_delivery_bc.sh` | Train PPO policy heads from scripted delivery observations/actions; solves delivery warm-start but not full standard start |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |

@@ -40,6 +40,7 @@ def collect_episode(env, max_steps: int) -> dict[str, Any]:
     for step in range(max_steps):
         before = state_summary(env)
         state = env.unwrapped.base_env.state
+        observations = env.unwrapped.featurize_fn(state)
         ego_action = scripted_action_for_player(state.players[0])
         alt_action = scripted_action_for_player(state.players[1])
         _, rewards, done, info = env.unwrapped.multi_step(ego_action, alt_action)
@@ -62,6 +63,10 @@ def collect_episode(env, max_steps: int) -> dict[str, Any]:
                 "reward": row_reward,
                 "sparse_reward": row_sparse_reward,
                 "shaped_reward": float(info.get("shaped_reward", 0.0)),
+                "player_observations": [
+                    observations[0].astype(float).tolist(),
+                    observations[1].astype(float).tolist(),
+                ],
                 "before": before,
                 "after": after,
             }

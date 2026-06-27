@@ -61,6 +61,7 @@ def trace_episode(
     layout: str | None = None,
     start_state_mode: str | None = None,
     standard_start: bool = False,
+    horizon: int | None = None,
 ) -> dict[str, Any]:
     register_envs()
     run_dir = Path(run_dir)
@@ -76,6 +77,9 @@ def trace_episode(
     elif start_state_mode is not None:
         config = dict(config)
         config["start_state_mode"] = start_state_mode
+    if horizon is not None:
+        config = dict(config)
+        config["horizon"] = horizon
 
     trace_dir = run_dir / "traces"
     trace_dir.mkdir(parents=True, exist_ok=True)
@@ -199,6 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-name", default="trace")
     parser.add_argument("--layout", help="Force a single layout for tracing.")
     parser.add_argument("--start-state-mode", help="Override config start_state_mode for tracing.")
+    parser.add_argument("--horizon", type=int, help="Override config horizon for tracing.")
     parser.add_argument(
         "--standard-start",
         action="store_true",
@@ -217,6 +222,7 @@ def main() -> None:
         layout=args.layout,
         start_state_mode=args.start_state_mode,
         standard_start=args.standard_start,
+        horizon=args.horizon,
     )
 
 

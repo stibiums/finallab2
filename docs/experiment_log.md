@@ -208,6 +208,29 @@ bash scripts/collect_delivery_demos.sh \
   --episodes 100 \
   --max-steps 40 \
   --output outputs/demos/small_corridor_delivery_scripted.json
+
+bash scripts/train_delivery_bc.sh \
+  --run-name small_corridor_delivery_bc_from_v3 \
+  --epochs 40 \
+  --batch-size 128 \
+  --learning-rate 0.001
+
+bash scripts/evaluate.sh outputs/runs/small_corridor_delivery_bc_from_v3 \
+  --episodes 20 \
+  --output-name eval_delivery_warmstart
+
+bash scripts/evaluate.sh outputs/runs/small_corridor_delivery_bc_from_v3 \
+  --episodes 20 \
+  --standard-start \
+  --horizon 400 \
+  --output-name eval_standard_start_h400
+
+bash scripts/train_curriculum.sh configs/small_corridor_delivery_warmstart_from_v3.json \
+  --run-name small_corridor_delivery_bc_ppo_finetune \
+  --init-run-dir outputs/runs/small_corridor_delivery_bc_from_v3 \
+  --timesteps 50000 \
+  --eval-interval 25000 \
+  --eval-episodes 20
 ```
 
 ## Run Summary
@@ -233,6 +256,8 @@ bash scripts/collect_delivery_demos.sh \
 | `small_corridor_structured_shaping_v2` | 63 | 300000 | 120.98 | 0.00 | 0.0 | 18.41 | - |
 | `small_corridor_structured_shaping_v3` | 64 | 300000 | 122.02 | 0.00 | 0.0 | 93.46 | - |
 | `small_corridor_delivery_warmstart_from_v3` | 65 | 100000 | 46.51 | 0.00 | 0.0 | 73.76 | - |
+| `small_corridor_delivery_bc_from_v3` | 65 | BC 40 epochs | - | 1.00 warm-start / 0.00 standard | 20.0 / 0.0 | 20.99 / 0.00 | - |
+| `small_corridor_delivery_bc_ppo_finetune` | 65 | 50000 | 22.53 | 1.00 warm-start / 0.00 standard | 20.0 / 0.0 | 20.99 / 0.00 | - |
 | `baseline_random1` | 70 | 300000 | 116.94 | 5.80 | 116.0 | 225.10 | 6.0 |
 | `baseline_random1_seed71` | 71 | 300000 | 116.99 | 5.20 | 104.0 | 202.80 | - |
 | `baseline_unident_s` | 80 | 300000 | 118.35 | 12.70 | 254.0 | 481.25 | 13.0 |
@@ -629,6 +654,35 @@ The scripted controller is intentionally simple: the soup-holding agent moves we
 
 Next decision: stop relying on PPO exploration for the final delivery segment. The next concrete implementation should use `outputs/demos/small_corridor_delivery_scripted.json` for behavior cloning or supervised action pretraining, then fine-tune with PPO from that policy.
 
+## Step 14: Behavior Cloning For The Delivery Segment
+
+This step turns the scripted delivery dataset into supervised policy pretraining. The demo collector now records each player's 62-dimensional Overcooked featurized observation before the scripted action, so the dataset can be used directly to train the PPO policy network with a negative log-likelihood loss over discrete actions.
+
+BC setup:
+
+| Run | Init run | Demo file | Epochs | Dataset steps | Ego val acc | Alt val acc |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| `small_corridor_delivery_bc_from_v3` | `small_corridor_structured_shaping_v3` | `outputs/demos/small_corridor_delivery_scripted.json` | 40 | 690 | 1.00 | 1.00 |
+
+Behavioral evaluation:
+
+| Run | Evaluation start | Horizon | Mean soups | Mean sparse reward | Mean episode reward | Interpretation |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| `small_corridor_delivery_bc_from_v3` | `small_corridor_delivery` | 120 | 1.00 | 20.0 | 20.99 | BC successfully learns the isolated final delivery segment. |
+| `small_corridor_delivery_bc_from_v3` | standard `small_corridor` | 400 | 0.00 | 0.0 | 0.00 | Delivery BC alone does not recover the earlier onion/pot/dish stages. |
+| `small_corridor_delivery_bc_ppo_finetune` | `small_corridor_delivery` | 120 | 1.00 | 20.0 | 20.99 | PPO fine-tuning preserves the delivery skill. |
+| `small_corridor_delivery_bc_ppo_finetune` | standard `small_corridor` | 400 | 0.00 | 0.0 | 0.00 | Fine-tuning on delivery states still does not transfer to the full start state. |
+
+Trace diagnosis:
+
+| Trace | Key behavior |
+| --- | --- |
+| `small_corridor_delivery_bc_from_v3/traces/delivery_warmstart_trace.json` | The soup holder delivers one soup. Sparse reward is 20.0 and the trace reaches 1.0 soup. |
+| `small_corridor_delivery_bc_from_v3/traces/standard_start_h400_trace.json` | Ego selects `stay` for all 400 steps; no held objects, no world objects, no reward events. |
+| `small_corridor_delivery_bc_ppo_finetune/traces/standard_start_h400_trace.json` | Same standard-start failure: no object pickup or placement happens. |
+
+Conclusion: behavior cloning is effective for the exact demonstrated delivery subtask, and it proves that supervised subtask pretraining can put a useful skill into the PPO policy. However, narrow delivery-only BC overwrites or fails to activate the earlier cooking behavior from standard start. The next small-corridor attempt should train on a broader scripted subtask mixture: onion pickup, pot placement, dish pickup, soup pickup, and delivery, or use a hierarchical/subtask router that calls the delivery policy only after soup pickup.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -659,6 +713,9 @@ Next decision: stop relying on PPO exploration for the final delivery segment. T
 26. The next `small_corridor` optimization should focus on delivery-stage warm starts, scripted subtask trajectories, or behavior-cloning pretraining instead of more generic reward coefficient tuning.
 27. Delivery warm-start PPO from the v3 checkpoint still gets 0.00 soups after 100k steps, even though shaped/progress reward rises from 34.07 to 73.76.
 28. Scripted delivery demos solve the isolated final delivery subtask with 100/100 success and provide the first clean data source for behavior cloning.
+29. Delivery behavior cloning reaches 1.00 soups on the isolated `small_corridor_delivery` start state.
+30. Delivery-only BC does not solve standard `small_corridor`; from the standard start the BC policy chooses `stay` for the whole 400-step trace.
+31. The next useful BC dataset must cover the full cooking chain or be used through an explicit subtask/hierarchical controller, not as a narrow replacement for the whole policy.
 
 ## Artifacts
 
@@ -715,6 +772,15 @@ Next decision: stop relying on PPO exploration for the final delivery segment. T
   - `outputs/runs/small_corridor_delivery_warmstart_from_v3/metrics/curriculum_eval.csv`
   - `outputs/runs/small_corridor_delivery_warmstart_from_v3/metrics/train_summary.json`
   - `outputs/demos/small_corridor_delivery_scripted.json`
+- Delivery BC artifacts:
+  - `outputs/runs/small_corridor_delivery_bc_from_v3/metrics/bc_summary.json`
+  - `outputs/runs/small_corridor_delivery_bc_from_v3/metrics/eval_delivery_warmstart.json`
+  - `outputs/runs/small_corridor_delivery_bc_from_v3/metrics/eval_standard_start_h400.json`
+  - `outputs/runs/small_corridor_delivery_bc_from_v3/traces/delivery_warmstart_trace.json`
+  - `outputs/runs/small_corridor_delivery_bc_from_v3/traces/standard_start_h400_trace.json`
+  - `outputs/runs/small_corridor_delivery_bc_ppo_finetune/metrics/curriculum_eval.csv`
+  - `outputs/runs/small_corridor_delivery_bc_ppo_finetune/metrics/eval_standard_start_h400.json`
+  - `outputs/runs/small_corridor_delivery_bc_ppo_finetune/traces/standard_start_h400_trace.json`
 - Phase 2 specialist runs:
   - `outputs/runs/baseline_small_corridor/metrics/eval_metrics.json`
   - `outputs/runs/baseline_small_corridor/metrics/zero_shot_layouts.csv`

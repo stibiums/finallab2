@@ -16,7 +16,7 @@ Key results so far:
 | `random0` specialist | 8.85 soups | A second 800k seed makes `random0` stronger and useful. |
 | `random1` specialist | 5.80 soups | The default 300k specialist is usable. |
 | `unident_s` specialist | 12.70 soups | This is the strongest current hard-layout specialist. |
-| `small_corridor` specialist | 0.00 soups | Default, inactive-distance, structured shaping, and delivery warm-start PPO still fail; scripted delivery demos are 100/100 successful. |
+| `small_corridor` specialist | 0.00 soups standard start; 1.00 soup delivery warm-start | Delivery BC solves the isolated final segment, but the full standard-start chain is still unsolved. |
 | naive multi-layout PPO | 0.00 soups on most maps | Simple layout mixing is not enough. |
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
 | improved onion router | 9.23 average soups, 5.80 min soups | Specialist composition is currently the strongest route over supported layouts. |
@@ -129,6 +129,8 @@ Completed results:
 | `small_corridor_structured_shaping_v2` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; stochastic policy farms onion/progress reward without delivery. |
 | `small_corridor_structured_shaping_v3` | `small_corridor` | 300000 | 0.00 | 0.0 | Partial progress; reaches soup pickup but still fails serving. |
 | `small_corridor_delivery_warmstart_from_v3` | `small_corridor` | 100000 | 0.00 | 0.0 | Failed as PPO, but confirms progress reward alone does not teach final serving. |
+| `small_corridor_delivery_bc_from_v3` | `small_corridor_delivery` | BC 40 epochs | 1.00 | 20.0 | Solves the isolated delivery warm-start, but gets 0.00 from the standard start. |
+| `small_corridor_delivery_bc_ppo_finetune` | `small_corridor_delivery` | 50000 | 1.00 | 20.0 | PPO fine-tuning preserves delivery BC, but still gets 0.00 from the standard start. |
 | `baseline_random1` | `random1` | 300000 | 5.80 | 116.0 | Success; add to router. |
 | `baseline_unident_s` | `unident_s` | 300000 | 12.70 | 254.0 | Success; add to router. |
 
@@ -285,7 +287,7 @@ For every new experiment:
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| `small_corridor` remains weak | Full layout coverage stays incomplete | Use scripted delivery demos for behavior-cloning/subtask pretraining before PPO fine-tuning |
+| `small_corridor` remains weak | Full layout coverage stays incomplete | Expand scripted/BC data beyond delivery to the full onion-pot-dish-soup chain or use a hierarchical subtask controller |
 | Shaped reward rises without sparse reward | Misleading training curves | Always report soups delivered and sparse reward |
 | Tomato layouts keep failing | Coverage gap | Exclude tomato from main claims or patch featurizer as separate engineering work |
 | Partner overfitting | Self-play results look stronger than they are | Include partner matrix and held-out seeds |
@@ -295,8 +297,8 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Turn `outputs/demos/small_corridor_delivery_scripted.json` into behavior-cloning or supervised action-pretraining data for the delivery segment.
-2. Fine-tune the BC-initialized policy on `small_corridor_delivery`, then test whether it transfers back to the standard `small_corridor` start.
+1. Build a broader scripted/BC dataset for `small_corridor` that covers onion pickup, pot placement, dish pickup, soup pickup, and delivery.
+2. Test whether full-chain BC or a subtask router can combine the v3 cooking behavior with the delivery BC skill.
 3. Use `router_onion_layouts_seed52_random0` as the main practical baseline for the report.
 4. Start assembling the report tables and demo package from `docs/experiment_log.md` and the saved GIFs.
 5. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.
