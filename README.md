@@ -9,6 +9,7 @@
 - Main ablation: no shaping vs default shaping vs distance shaping.
 - Follow-up experiments: partner diversity, zero-shot layout transfer, and multi-layout curriculum.
 - Outputs: trained models, TensorBoard logs, evaluation CSV/JSON, GIF demo.
+- Detailed execution plan: [docs/project_plan.md](docs/project_plan.md).
 
 ## Setup
 
