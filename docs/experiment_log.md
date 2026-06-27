@@ -79,6 +79,20 @@ bash scripts/evaluate_matrix.sh outputs/runs/baseline_random0 \
   --output-name zero_shot_layouts
 
 bash scripts/evaluate_router.sh configs/router_simple_random0.json
+
+bash scripts/train.sh configs/baseline_random0_long.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random0_long \
+  --partner-run-dir outputs/runs/baseline_random0_long \
+  --layout random0 --layout simple --layout small_corridor --layout random1 --layout unident_s --layout simple_tomato \
+  --output-name zero_shot_layouts
+
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route random0=outputs/runs/baseline_random0_long \
+  --output-dir outputs/runs/router_simple_random0_long \
+  --output-name router_eval
+
+bash scripts/record_demo.sh outputs/runs/baseline_random0_long --layout random0 --output-name random0_long_demo --max-steps 400
 ```
 
 ## Run Summary
@@ -95,6 +109,8 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json
 | `curriculum_simple_random0` | 40 | 300000 | 165.43 | 9.85 / 0.00 | 197.0 / 0.0 | 373.70 / 0.00 | 10.0 / 0.0 |
 | `baseline_random0` | 50 | 300000 | 127.26 | 0.85 | 17.0 | 47.70 | 0.0 |
 | `router_simple_random0` | - | 0 | - | 9.55 / 0.85 | 191.0 / 17.0 | 360.40 / 47.70 | - |
+| `baseline_random0_long` | 50 | 800000 | 306.26 | 6.30 | 126.0 | 244.45 | 5.0 |
+| `router_simple_random0_long` | - | 0 | - | 9.55 / 6.30 | 191.0 / 126.0 | 360.40 / 244.45 | - |
 
 ## Step 1: Reward-Shaping Ablation
 
@@ -256,6 +272,40 @@ Router evaluation:
 
 Conclusion: the router is the first evaluated setup that gets nonzero sparse reward on both `simple` and `random0`, with a supported-layout average of 5.20 soups and a supported-layout minimum of 0.85 soups. This confirms that the immediate bottleneck is not evaluation infrastructure but policy coverage: we need stronger specialists or a real layout-conditioned policy before claiming broad layout competence.
 
+## Step 8: Longer Random0 Specialist
+
+This run tests the Phase 1 plan: keep the same `random0` PPO setup, same seed, and same default shaping, but increase training from 300k to 800k steps. This isolates whether the weak `random0` result was mostly a training-budget issue.
+
+Training setup:
+
+| Run | Layout | Seed | Timesteps | Train seconds |
+| --- | --- | ---: | ---: | ---: |
+| `baseline_random0_long` | `random0` | 50 | 800000 | 306.26 |
+
+Self-play evaluation:
+
+| Layout | Mean soups | Mean sparse reward | Mean episode reward | Status | Error |
+| --- | ---: | ---: | ---: | --- | --- |
+| `random0` | 6.30 | 126.0 | 244.45 | ok | |
+| `simple` | 0.00 | 0.0 | 0.30 | ok | |
+| `small_corridor` | 0.00 | 0.0 | 0.00 | ok | |
+| `random1` | 0.00 | 0.0 | 0.00 | ok | |
+| `unident_s` | 0.00 | 0.0 | 0.00 | ok | |
+| `simple_tomato` | - | - | - | error | `KeyError: 'tomato'` |
+
+Updated router evaluation:
+
+| Layout | Selected run | Mean soups | Mean sparse reward | Mean episode reward | Status | Error |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | 191.0 | 360.40 | ok | |
+| `random0` | `baseline_random0_long` | 6.30 | 126.0 | 244.45 | ok | |
+| `small_corridor` | - | - | - | - | skipped | `NoRoute` |
+| `random1` | - | - | - | - | skipped | `NoRoute` |
+| `unident_s` | - | - | - | - | skipped | `NoRoute` |
+| `simple_tomato` | - | - | - | - | skipped | `NoRoute` |
+
+Conclusion: extra training budget strongly improves the `random0` specialist, from 0.85 to 6.30 soups. The updated router's supported-layout average rises from 5.20 to 7.925 soups, and its supported-layout minimum rises from 0.85 to 6.30 soups. This clears the Phase 1 success criterion, so the next step should move to Phase 2: train specialists for `small_corridor`, `random1`, and `unident_s`.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -269,7 +319,9 @@ Conclusion: the router is the first evaluated setup that gets nonzero sparse rew
 9. Conservative `simple + random0` fine-tuning improves `simple`, but it still does not unlock `random0`.
 10. `random0` is learnable as a single-layout specialist, reaching 0.85 soups after 300k steps.
 11. The layout-router baseline composes the best current `simple` specialist and the current `random0` specialist, reaching 9.55 soups on `simple` and 0.85 on `random0`.
-12. Cross-layout capability is currently best treated as a composition problem over specialists, not as a simple zero-shot or naive mixed-training problem.
+12. Increasing `random0` specialist training to 800k steps improves `random0` from 0.85 to 6.30 soups.
+13. The updated router reaches 9.55 soups on `simple` and 6.30 on `random0`, so specialist routing is now a strong practical baseline.
+14. Cross-layout capability is currently best treated as a composition problem over specialists, not as a simple zero-shot or naive mixed-training problem.
 
 ## Artifacts
 
@@ -295,10 +347,18 @@ Conclusion: the router is the first evaluated setup that gets nonzero sparse rew
 - Random0 specialist run:
   - `outputs/runs/baseline_random0/metrics/eval_metrics.json`
   - `outputs/runs/baseline_random0/metrics/zero_shot_layouts.csv`
+- Long Random0 specialist run:
+  - `outputs/runs/baseline_random0_long/metrics/train_summary.json`
+  - `outputs/runs/baseline_random0_long/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_random0_long/metrics/zero_shot_layouts.csv`
 - Layout-router run:
   - `outputs/runs/router_simple_random0/router_config.resolved.json`
   - `outputs/runs/router_simple_random0/metrics/router_eval.csv`
   - `outputs/runs/router_simple_random0/metrics/router_eval.json`
+- Updated layout-router run:
+  - `outputs/runs/router_simple_random0_long/router_config.resolved.json`
+  - `outputs/runs/router_simple_random0_long/metrics/router_eval.csv`
+  - `outputs/runs/router_simple_random0_long/metrics/router_eval.json`
 - Demos:
   - `outputs/runs/baseline_simple/demo/demo.gif`
   - `outputs/runs/no_shaping_simple/demo/demo.gif`
@@ -310,13 +370,14 @@ Conclusion: the router is the first evaluated setup that gets nonzero sparse rew
   - `outputs/runs/curriculum_simple_random0/demo/random0_best_demo.gif`
   - `outputs/runs/baseline_random0/demo/random0_demo.gif`
   - `outputs/runs/baseline_random0/demo/simple_transfer_demo.gif`
+  - `outputs/runs/baseline_random0_long/demo/random0_long_demo.gif`
 
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
 
-1. Train a stronger `random0` specialist first, either with a longer budget or better-shaped rewards.
-2. Add specialists for `small_corridor`, `random1`, and `unident_s`, then expand the router coverage table.
+1. Add specialists for `small_corridor`, `random1`, and `unident_s`, then expand the router coverage table.
+2. Add periodic checkpoint selection for long specialist runs, because `baseline_random0_long` improved strongly but training reward was not monotonic.
 3. Try reverse curriculum: initialize from `baseline_random0`, then introduce `simple` with a small sampling weight, to see whether the easier layout can be added without destroying `random0`.
 4. Add layout-conditioning or policy selection before claiming one unified policy generalizes.
 5. Stronger partner-diversity: include held-out partner seeds and evaluate against them, not only against training partners.

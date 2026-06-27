@@ -77,6 +77,12 @@ Train a single-layout `random0` diagnostic expert:
 bash scripts/train.sh configs/baseline_random0.json
 ```
 
+Train the stronger long-budget `random0` specialist:
+
+```bash
+bash scripts/train.sh configs/baseline_random0_long.json
+```
+
 You can override common options:
 
 ```bash
@@ -140,6 +146,7 @@ This routes `simple` to `outputs/runs/curriculum_simple_random0` and `random0` t
 | multi-layout curriculum | `configs/multi_layout_curriculum.json` | Test whether naive episode-level layout mixing improves transfer |
 | staged simple+random0 | `configs/curriculum_simple_random0.json` | Fine-tune from `simple` baseline while periodically evaluating both layouts |
 | random0 expert | `configs/baseline_random0.json` | Test whether `random0` is learnable as a single-layout specialist |
+| random0 long expert | `configs/baseline_random0_long.json` | Test whether more budget makes the hard-layout specialist reliable |
 | simple+random0 router | `configs/router_simple_random0.json` | Compose map specialists and measure routed coverage |
 
 Useful report metrics:

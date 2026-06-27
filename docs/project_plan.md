@@ -13,13 +13,13 @@ Key results so far:
 | Capability | Current best result | Meaning |
 | --- | ---: | --- |
 | `simple` specialist | 9.55 soups | The easy map is basically solved well enough for the report. |
-| `random0` specialist | 0.85 soups | `random0` is learnable, but still weak. |
+| `random0` specialist | 6.30 soups | Longer single-layout training makes `random0` useful. |
 | naive multi-layout PPO | 0.00 soups on most maps | Simple layout mixing is not enough. |
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
-| `simple + random0` router | 9.55 on `simple`, 0.85 on `random0` | Specialist composition is currently the most promising route. |
+| `simple + random0` router | 9.55 on `simple`, 6.30 on `random0` | Specialist composition is currently the strongest route. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
-The main bottleneck is no longer whether the baseline can run. The bottleneck is policy coverage across layouts, especially making `random0` and the remaining onion layouts reliably deliver soups.
+The main bottleneck is no longer whether the baseline can run. The bottleneck is now policy coverage across the remaining onion layouts: `small_corridor`, `random1`, and `unident_s`.
 
 ## Project Goal
 
@@ -50,7 +50,7 @@ This gives the report a clean arc:
 
 ## Phase 1: Strengthen `random0`
 
-Status: next immediate phase.
+Status: completed.
 
 Why this phase matters:
 
@@ -63,6 +63,12 @@ Planned experiments:
 | `baseline_random0_long` | Train `random0` for 800k-1M steps | Test whether more budget solves the weak specialist | `random0` mean soups >= 3.0 |
 | `baseline_random0_seed51/52` | Train extra 300k-step seeds | Check whether 0.85 is seed luck or stable | Best seed clearly beats 0.85 |
 | `random0_shaping_v1` | Tune shaping around pot progress, dish pickup, soup pickup, delivery | Use only if longer training still stalls | Higher sparse reward, not just higher shaped reward |
+
+Completed result:
+
+| Run | Timesteps | Mean soups | Mean sparse reward | Mean episode reward | Decision |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `baseline_random0_long` | 800000 | 6.30 | 126.0 | 244.45 | Success; use as the new `random0` router specialist. |
 
 Recommended first command after adding the config:
 
@@ -86,13 +92,13 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
 
 Decision rule:
 
-- If `baseline_random0_long` reaches at least 3 soups, use it as the new `random0` route and move to Phase 2.
+- If `baseline_random0_long` reaches at least 3 soups, use it as the new `random0` route and move to Phase 2. This condition is satisfied.
 - If it improves but stays below 3 soups, run two more seeds before changing reward shaping.
 - If it stays near 0-1 soups, stop adding budget and move to reward redesign.
 
 ## Phase 2: Expand Specialist Coverage
 
-Status: after `random0` improves or after a decision that current `random0` is good enough for the report.
+Status: next immediate phase.
 
 Target layouts:
 
@@ -236,14 +242,16 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Add `configs/baseline_random0_long.json`.
-2. Train `baseline_random0_long` for 800k-1M steps.
-3. Evaluate it on `random0` and the existing layout matrix.
-4. Re-run router with the new `random0` route.
-5. Update `docs/experiment_log.md` and the Notion experiment page with the result.
+1. Add `configs/baseline_small_corridor.json`.
+2. Train `baseline_small_corridor` for 300k steps.
+3. Evaluate it on `small_corridor` and the existing layout matrix.
+4. If it has nonzero sparse reward, add it to the router and re-run router evaluation.
+5. Repeat the same pattern for `random1` and `unident_s`.
+6. Update `docs/experiment_log.md` and the Notion experiment page after each specialist.
 
-After that result, decide whether to:
+After each remaining-layout specialist, decide whether to:
 
-- keep adding budget/seeds to `random0`,
-- redesign shaping for `random0`,
-- or move on to the remaining layout specialists.
+- keep the specialist as a router route,
+- extend its budget,
+- try another seed,
+- or redesign shaping for that layout.
