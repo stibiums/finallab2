@@ -1,0 +1,19 @@
+{
+  "run_name": "router_simple_random0",
+  "output_dir": "outputs/runs/router_simple_random0",
+  "output_name": "router_eval",
+  "episodes": 20,
+  "deterministic_eval": true,
+  "routes": {
+    "simple": "outputs/runs/curriculum_simple_random0",
+    "random0": "outputs/runs/baseline_random0"
+  },
+  "layouts": [
+    "simple",
+    "random0",
+    "small_corridor",
+    "random1",
+    "unident_s",
+    "simple_tomato"
+  ]
+}

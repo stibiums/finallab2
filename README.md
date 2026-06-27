@@ -120,6 +120,14 @@ bash scripts/evaluate_matrix.sh outputs/runs/multi_layout_curriculum \
 
 Matrix evaluation records unsupported or failing layout/partner combinations as `status=error` rows instead of aborting the whole sweep.
 
+Evaluate the layout-router baseline:
+
+```bash
+bash scripts/evaluate_router.sh configs/router_simple_random0.json
+```
+
+This routes `simple` to `outputs/runs/curriculum_simple_random0` and `random0` to `outputs/runs/baseline_random0`. Layouts without a configured specialist are recorded as `status=skipped`, which makes the current coverage explicit.
+
 ## Suggested Experiment Table
 
 | Run | Config | Purpose |
@@ -131,6 +139,7 @@ Matrix evaluation records unsupported or failing layout/partner combinations as 
 | multi-layout curriculum | `configs/multi_layout_curriculum.json` | Test whether naive episode-level layout mixing improves transfer |
 | staged simple+random0 | `configs/curriculum_simple_random0.json` | Fine-tune from `simple` baseline while periodically evaluating both layouts |
 | random0 expert | `configs/baseline_random0.json` | Test whether `random0` is learnable as a single-layout specialist |
+| simple+random0 router | `configs/router_simple_random0.json` | Compose map specialists and measure routed coverage |
 
 Useful report metrics:
 

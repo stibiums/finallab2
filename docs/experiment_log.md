@@ -1,7 +1,7 @@
 # Overcooked MARL Experiment Log
 
 Date: 2026-06-20
-Last updated: 2026-06-22
+Last updated: 2026-06-27
 
 Project path: `/Volumes/share/pku/26_spring/多智能体/finallab2`
 
@@ -77,6 +77,8 @@ bash scripts/evaluate_matrix.sh outputs/runs/baseline_random0 \
   --partner-run-dir outputs/runs/baseline_random0 \
   --layout random0 --layout simple --layout small_corridor --layout random1 --layout unident_s --layout simple_tomato \
   --output-name zero_shot_layouts
+
+bash scripts/evaluate_router.sh configs/router_simple_random0.json
 ```
 
 ## Run Summary
@@ -92,6 +94,7 @@ bash scripts/evaluate_matrix.sh outputs/runs/baseline_random0 \
 | `multi_layout_curriculum` | 30 | 500000 | 249.45 | 0.00 | 0.0 | 6.25 | 0.0 |
 | `curriculum_simple_random0` | 40 | 300000 | 165.43 | 9.85 / 0.00 | 197.0 / 0.0 | 373.70 / 0.00 | 10.0 / 0.0 |
 | `baseline_random0` | 50 | 300000 | 127.26 | 0.85 | 17.0 | 47.70 | 0.0 |
+| `router_simple_random0` | - | 0 | - | 9.55 / 0.85 | 191.0 / 17.0 | 360.40 / 47.70 | - |
 
 ## Step 1: Reward-Shaping Ablation
 
@@ -229,6 +232,30 @@ This run trains a new self-play specialist directly on `random0`.
 
 Conclusion: `random0` is learnable with the current environment and default shaping, but it needs map-specific training. The problem is not that `random0` has no signal; the problem is that mixing it into a `simple` expert does not transfer the right behavior. The next optimization should use map specialists as curriculum anchors instead of expecting one expert to absorb a new layout by naive mixing.
 
+## Step 7: Layout-Router Baseline
+
+This run does not train a new neural policy. It evaluates a simple policy-selection baseline: choose a specialist run from the current layout name, then run that specialist's ego and partner policies on the selected layout. This is useful as a specialist-composition baseline, not as evidence that one unified policy generalizes.
+
+Routes:
+
+| Layout | Selected run | Reason |
+| --- | --- | --- |
+| `simple` | `outputs/runs/curriculum_simple_random0` | Best current `simple` score from staged curriculum |
+| `random0` | `outputs/runs/baseline_random0` | Only current specialist with nonzero `random0` sparse reward |
+
+Router evaluation:
+
+| Layout | Selected run | Mean soups | Mean sparse reward | Mean episode reward | Status | Error |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | 191.0 | 360.40 | ok | |
+| `random0` | `baseline_random0` | 0.85 | 17.0 | 47.70 | ok | |
+| `small_corridor` | - | - | - | - | skipped | `NoRoute` |
+| `random1` | - | - | - | - | skipped | `NoRoute` |
+| `unident_s` | - | - | - | - | skipped | `NoRoute` |
+| `simple_tomato` | - | - | - | - | skipped | `NoRoute` |
+
+Conclusion: the router is the first evaluated setup that gets nonzero sparse reward on both `simple` and `random0`, with a supported-layout average of 5.20 soups and a supported-layout minimum of 0.85 soups. This confirms that the immediate bottleneck is not evaluation infrastructure but policy coverage: we need stronger specialists or a real layout-conditioned policy before claiming broad layout competence.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -241,7 +268,8 @@ Conclusion: `random0` is learnable with the current environment and default shap
 8. The first multi-layout curriculum is not yet a solution: it produces high shaped reward during training but almost no sparse reward in evaluation.
 9. Conservative `simple + random0` fine-tuning improves `simple`, but it still does not unlock `random0`.
 10. `random0` is learnable as a single-layout specialist, reaching 0.85 soups after 300k steps.
-11. Cross-layout capability is currently best treated as a composition problem over specialists, not as a simple zero-shot or naive mixed-training problem.
+11. The layout-router baseline composes the best current `simple` specialist and the current `random0` specialist, reaching 9.55 soups on `simple` and 0.85 on `random0`.
+12. Cross-layout capability is currently best treated as a composition problem over specialists, not as a simple zero-shot or naive mixed-training problem.
 
 ## Artifacts
 
@@ -267,6 +295,10 @@ Conclusion: `random0` is learnable with the current environment and default shap
 - Random0 specialist run:
   - `outputs/runs/baseline_random0/metrics/eval_metrics.json`
   - `outputs/runs/baseline_random0/metrics/zero_shot_layouts.csv`
+- Layout-router run:
+  - `outputs/runs/router_simple_random0/router_config.resolved.json`
+  - `outputs/runs/router_simple_random0/metrics/router_eval.csv`
+  - `outputs/runs/router_simple_random0/metrics/router_eval.json`
 - Demos:
   - `outputs/runs/baseline_simple/demo/demo.gif`
   - `outputs/runs/no_shaping_simple/demo/demo.gif`
@@ -283,8 +315,8 @@ Conclusion: `random0` is learnable with the current environment and default shap
 
 The next project direction should move beyond naive multi-layout mixing:
 
-1. Train stronger layout specialists first, starting with a longer or better-shaped `random0` expert.
-2. Evaluate a simple layout-router baseline: choose the `simple` expert on `simple`, choose the `random0` expert on `random0`, and report it as a specialist upper bound.
+1. Train a stronger `random0` specialist first, either with a longer budget or better-shaped rewards.
+2. Add specialists for `small_corridor`, `random1`, and `unident_s`, then expand the router coverage table.
 3. Try reverse curriculum: initialize from `baseline_random0`, then introduce `simple` with a small sampling weight, to see whether the easier layout can be added without destroying `random0`.
 4. Add layout-conditioning or policy selection before claiming one unified policy generalizes.
 5. Stronger partner-diversity: include held-out partner seeds and evaluate against them, not only against training partners.
