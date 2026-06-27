@@ -13,13 +13,14 @@ Key results so far:
 | Capability | Current best result | Meaning |
 | --- | ---: | --- |
 | `simple` specialist | 9.55 soups | The easy map is basically solved well enough for the report. |
-| `random0` specialist | 6.30 soups | Longer single-layout training makes `random0` useful. |
+| `random0` specialist | 8.85 soups | A second 800k seed makes `random0` stronger and useful. |
 | `random1` specialist | 5.80 soups | The default 300k specialist is usable. |
 | `unident_s` specialist | 12.70 soups | This is the strongest current hard-layout specialist. |
 | `small_corridor` specialist | 0.00 soups | Default and distance-shaping specialists both fail. |
 | naive multi-layout PPO | 0.00 soups on most maps | Simple layout mixing is not enough. |
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
-| expanded onion router | 8.59 average soups, 5.80 min soups | Specialist composition is currently the strongest route over supported layouts. |
+| improved onion router | 9.23 average soups, 5.80 min soups | Specialist composition is currently the strongest route over supported layouts. |
+| hard-layout partner robustness | mixed | `unident_s` is robust, `random1` is brittle, and `random0` is asymmetric. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
 The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now `small_corridor` coverage and partner robustness for the successful specialists.
@@ -72,6 +73,7 @@ Completed result:
 | Run | Timesteps | Mean soups | Mean sparse reward | Mean episode reward | Decision |
 | --- | ---: | ---: | ---: | ---: | --- |
 | `baseline_random0_long` | 800000 | 6.30 | 126.0 | 244.45 | Success; use as the new `random0` router specialist. |
+| `baseline_random0_long_seed52` | 800000 | 8.85 | 177.0 | 339.45 | Stronger success; use as the preferred `random0` router specialist. |
 
 Recommended first command after adding the config:
 
@@ -151,6 +153,19 @@ Expanded router result:
 Supported-layout average: 8.59 soups.
 Supported-layout minimum: 5.80 soups.
 
+Updated router with `baseline_random0_long_seed52`:
+
+| Layout | Selected run | Mean soups | Status |
+| --- | --- | ---: | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | ok |
+| `random0` | `baseline_random0_long_seed52` | 8.85 | ok |
+| `small_corridor` | - | - | skipped `NoRoute` |
+| `random1` | `baseline_random1` | 5.80 | ok |
+| `unident_s` | `baseline_unident_s` | 12.70 | ok |
+
+Updated supported-layout average: 9.23 soups.
+Updated supported-layout minimum: 5.80 soups.
+
 Phase success criterion:
 
 - Minimum: `simple` plus at least two harder layouts have nonzero sparse reward. Satisfied.
@@ -159,7 +174,7 @@ Phase success criterion:
 
 ## Phase 3: Robustness And Partner Generalization
 
-Status: next immediate phase, alongside `small_corridor` diagnosis.
+Status: initial hard-layout matrices completed; stronger partner-aware training remains future work.
 
 Why this phase matters:
 
@@ -187,6 +202,16 @@ Phase success criterion:
 
 - Report at least one partner-generalization matrix.
 - Explain whether the improvement is layout-specific, partner-specific, or both.
+
+Completed hard-layout matrix summary:
+
+| Layout | Self-play result | Held-out partner result | Interpretation |
+| --- | ---: | ---: | --- |
+| `random0` | 6.30 to 8.85 soups | 1.65 to 7.70 soups | Asymmetric. The seed-52 ego is robust to the old partner, but the old ego is brittle with the seed-52 partner. |
+| `random1` | 5.20 to 5.80 soups | 0.00 to 0.25 soups | Strong partner brittleness despite good self-play. |
+| `unident_s` | 12.60 to 12.70 soups | 12.60 to 12.65 soups | Robust across two independent seeds. |
+
+Decision: partner robustness must be reported per layout. `unident_s` can be described as robust across the tested seeds, but `random1` should be described as a self-play specialist rather than a generally compatible teammate.
 
 ## Phase 4: Unified Or Layout-Conditioned Policy
 
@@ -268,9 +293,9 @@ The next concrete work item is:
 
 1. Use the `small_corridor` traces to design a structured fix: the current policies never reach a useful pickup/place subgoal.
 2. Try a more structured `small_corridor` approach: curriculum, scripted warm start, or stronger layout-specific shaping.
-3. Build partner-generalization matrices for `baseline_random0_long`, `baseline_random1`, and `baseline_unident_s`.
-4. Use `router_onion_layouts` as the main practical baseline for the report.
-5. Start assembling the report tables and demo package from `docs/experiment_log.md` and the saved GIFs.
+3. Use `router_onion_layouts_seed52_random0` as the main practical baseline for the report.
+4. Start assembling the report tables and demo package from `docs/experiment_log.md` and the saved GIFs.
+5. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.
 
 After each new attempt, decide whether to:
 

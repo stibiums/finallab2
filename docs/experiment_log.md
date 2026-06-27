@@ -135,6 +135,51 @@ bash scripts/record_demo.sh outputs/runs/baseline_unident_s --layout unident_s -
 bash scripts/trace_episode.sh outputs/runs/baseline_small_corridor --layout small_corridor --output-name small_corridor_trace --max-steps 400
 bash scripts/trace_episode.sh outputs/runs/small_corridor_shaping_v1 --layout small_corridor --output-name small_corridor_shaping_trace --max-steps 400
 bash scripts/trace_episode.sh outputs/runs/baseline_random1 --layout random1 --output-name random1_trace --max-steps 400
+
+bash scripts/train.sh configs/baseline_random0_long_seed52.json
+bash scripts/train.sh configs/baseline_random1_seed71.json
+bash scripts/train.sh configs/baseline_unident_s_seed81.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random0_long \
+  --partner-run-dir outputs/runs/baseline_random0_long \
+  --partner-run-dir outputs/runs/baseline_random0_long_seed52 \
+  --layout random0 \
+  --output-name partner_matrix_hard_random0
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random0_long_seed52 \
+  --partner-run-dir outputs/runs/baseline_random0_long \
+  --partner-run-dir outputs/runs/baseline_random0_long_seed52 \
+  --layout random0 \
+  --output-name partner_matrix_hard_random0
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_unident_s \
+  --partner-run-dir outputs/runs/baseline_unident_s \
+  --partner-run-dir outputs/runs/baseline_unident_s_seed81 \
+  --layout unident_s \
+  --output-name partner_matrix_hard_unident_s
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_unident_s_seed81 \
+  --partner-run-dir outputs/runs/baseline_unident_s \
+  --partner-run-dir outputs/runs/baseline_unident_s_seed81 \
+  --layout unident_s \
+  --output-name partner_matrix_hard_unident_s
+
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route simple=outputs/runs/curriculum_simple_random0 \
+  --route random0=outputs/runs/baseline_random0_long_seed52 \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --output-dir outputs/runs/router_onion_layouts_seed52_random0 \
+  --output-name router_eval
 ```
 
 ## Run Summary
@@ -152,12 +197,16 @@ bash scripts/trace_episode.sh outputs/runs/baseline_random1 --layout random1 --o
 | `baseline_random0` | 50 | 300000 | 127.26 | 0.85 | 17.0 | 47.70 | 0.0 |
 | `router_simple_random0` | - | 0 | - | 9.55 / 0.85 | 191.0 / 17.0 | 360.40 / 47.70 | - |
 | `baseline_random0_long` | 50 | 800000 | 306.26 | 6.30 | 126.0 | 244.45 | 5.0 |
+| `baseline_random0_long_seed52` | 52 | 800000 | 319.96 | 8.85 | 177.0 | 339.45 | - |
 | `router_simple_random0_long` | - | 0 | - | 9.55 / 6.30 | 191.0 / 126.0 | 360.40 / 244.45 | - |
 | `baseline_small_corridor` | 60 | 300000 | 118.54 | 0.00 | 0.0 | 0.00 | - |
 | `small_corridor_shaping_v1` | 61 | 300000 | 116.26 | 0.00 | 0.0 | 0.00 | - |
 | `baseline_random1` | 70 | 300000 | 116.94 | 5.80 | 116.0 | 225.10 | 6.0 |
+| `baseline_random1_seed71` | 71 | 300000 | 116.99 | 5.20 | 104.0 | 202.80 | - |
 | `baseline_unident_s` | 80 | 300000 | 118.35 | 12.70 | 254.0 | 481.25 | 13.0 |
+| `baseline_unident_s_seed81` | 81 | 300000 | 118.88 | 12.60 | 252.0 | 470.30 | - |
 | `router_onion_layouts` | - | 0 | - | 9.55 / 6.30 / 5.80 / 12.70 | 191.0 / 126.0 / 116.0 / 254.0 | 360.40 / 244.45 / 225.10 / 481.25 | - |
+| `router_onion_layouts_seed52_random0` | - | 0 | - | 9.55 / 8.85 / 5.80 / 12.70 | 191.0 / 177.0 / 116.0 / 254.0 | 360.40 / 339.45 / 225.10 / 481.25 | - |
 
 ## Step 1: Reward-Shaping Ablation
 
@@ -429,6 +478,50 @@ Action-count details:
 
 Conclusion: the `small_corridor` failure happens before the soup-delivery chain even begins. The default policy never interacts, while the distance-shaping policy interacts frequently but not at useful stations. This points to an exploration/subgoal-discovery problem, not merely insufficient final-task reward. The next `small_corridor` attempt should use a more structured approach: scripted warm start, curriculum over starting positions/subtasks, or a stronger layout-specific shaping signal around first valid pickup and first valid placement.
 
+## Step 11: Hard-Layout Partner Robustness
+
+This step trains held-out partner seeds for the successful hard layouts and evaluates reciprocal partner matrices. It also re-evaluates the onion-layout router after replacing the `random0` route with the stronger seed-52 long specialist.
+
+Additional specialist seeds:
+
+| Run | Layout | Seed | Timesteps | Mean soups | Mean sparse reward | Mean episode reward | Decision |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `baseline_random0_long_seed52` | `random0` | 52 | 800000 | 8.85 | 177.0 | 339.45 | Stronger than `baseline_random0_long`; use as the preferred `random0` route. |
+| `baseline_random1_seed71` | `random1` | 71 | 300000 | 5.20 | 104.0 | 202.80 | Similar self-play to `baseline_random1`; useful held-out partner. |
+| `baseline_unident_s_seed81` | `unident_s` | 81 | 300000 | 12.60 | 252.0 | 470.30 | Matches `baseline_unident_s`; useful held-out partner. |
+
+Reciprocal partner matrices:
+
+| Layout | Ego | Partner | Mean soups | Mean sparse reward | Interpretation |
+| --- | --- | --- | ---: | ---: | --- |
+| `random0` | `baseline_random0_long` | `baseline_random0_long` | 6.30 | 126.0 | Original self-play baseline. |
+| `random0` | `baseline_random0_long` | `baseline_random0_long_seed52` | 1.65 | 33.0 | Old ego is brittle with the new partner. |
+| `random0` | `baseline_random0_long_seed52` | `baseline_random0_long` | 7.70 | 154.0 | New ego remains strong with the old partner. |
+| `random0` | `baseline_random0_long_seed52` | `baseline_random0_long_seed52` | 8.85 | 177.0 | New self-play is the best `random0` result so far. |
+| `random1` | `baseline_random1` | `baseline_random1` | 5.80 | 116.0 | Original self-play baseline. |
+| `random1` | `baseline_random1` | `baseline_random1_seed71` | 0.25 | 5.0 | Strong collapse under partner mismatch. |
+| `random1` | `baseline_random1_seed71` | `baseline_random1` | 0.00 | 0.0 | Mismatch collapse is reciprocal. |
+| `random1` | `baseline_random1_seed71` | `baseline_random1_seed71` | 5.20 | 104.0 | Both seeds work in self-play but not cross-play. |
+| `unident_s` | `baseline_unident_s` | `baseline_unident_s` | 12.70 | 254.0 | Original self-play baseline. |
+| `unident_s` | `baseline_unident_s` | `baseline_unident_s_seed81` | 12.60 | 252.0 | Robust to held-out partner. |
+| `unident_s` | `baseline_unident_s_seed81` | `baseline_unident_s` | 12.65 | 253.0 | Robust in the opposite direction too. |
+| `unident_s` | `baseline_unident_s_seed81` | `baseline_unident_s_seed81` | 12.60 | 252.0 | Held-out self-play matches the original. |
+
+Updated onion-router evaluation:
+
+| Layout | Selected run | Mean soups | Mean sparse reward | Status |
+| --- | --- | ---: | ---: | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | 191.0 | ok |
+| `random0` | `baseline_random0_long_seed52` | 8.85 | 177.0 | ok |
+| `small_corridor` | - | - | - | skipped `NoRoute` |
+| `random1` | `baseline_random1` | 5.80 | 116.0 | ok |
+| `unident_s` | `baseline_unident_s` | 12.70 | 254.0 | ok |
+| `simple_tomato` | - | - | - | skipped `NoRoute` |
+
+The supported-layout average improves from 8.59 to 9.23 soups, while the supported-layout minimum stays 5.80 soups because `random1` is now the weakest routed layout.
+
+Conclusion: partner robustness is layout-specific, not guaranteed by good self-play. `unident_s` is robust across two strong seeds, `random1` is strongly partner-brittle, and `random0` is asymmetric: the new seed-52 ego is robust to the old partner, but the old ego is not robust to the new partner. For the main router result, `baseline_random0_long_seed52` should replace `baseline_random0_long`.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -450,6 +543,10 @@ Conclusion: the `small_corridor` failure happens before the soup-delivery chain 
 17. `unident_s` is the strongest current hard-layout specialist, reaching 12.70 soups.
 18. The expanded onion router reaches 8.59 supported-layout average soups and 5.80 supported-layout minimum soups over four routed layouts, while explicitly skipping `small_corridor` and tomato layouts.
 19. Trace diagnosis shows the `small_corridor` policies do not reach the first useful subgoal: default training never uses ego `interact`, and distance shaping causes many interactions but no successful pickup or placement.
+20. A second 800k `random0` seed (`baseline_random0_long_seed52`) improves the `random0` specialist from 6.30 to 8.85 soups.
+21. Replacing the `random0` route with `baseline_random0_long_seed52` improves the routed supported-layout average from 8.59 to 9.23 soups.
+22. Hard-layout partner robustness is uneven: `unident_s` is robust across seeds, `random1` collapses under held-out partners, and `random0` shows asymmetric compatibility.
+23. Self-play score alone is not enough evidence for general coordination; cross-play matrices are needed for every claimed robust specialist.
 
 ## Artifacts
 
@@ -479,6 +576,16 @@ Conclusion: the `small_corridor` failure happens before the soup-delivery chain 
   - `outputs/runs/baseline_random0_long/metrics/train_summary.json`
   - `outputs/runs/baseline_random0_long/metrics/eval_metrics.json`
   - `outputs/runs/baseline_random0_long/metrics/zero_shot_layouts.csv`
+- Hard-layout partner-robustness runs:
+  - `outputs/runs/baseline_random0_long_seed52/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_random1_seed71/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_unident_s_seed81/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_random0_long/metrics/partner_matrix_hard_random0.csv`
+  - `outputs/runs/baseline_random0_long_seed52/metrics/partner_matrix_hard_random0.csv`
+  - `outputs/runs/baseline_random1/metrics/partner_matrix_hard_random1.csv`
+  - `outputs/runs/baseline_random1_seed71/metrics/partner_matrix_hard_random1.csv`
+  - `outputs/runs/baseline_unident_s/metrics/partner_matrix_hard_unident_s.csv`
+  - `outputs/runs/baseline_unident_s_seed81/metrics/partner_matrix_hard_unident_s.csv`
 - Phase 2 specialist runs:
   - `outputs/runs/baseline_small_corridor/metrics/eval_metrics.json`
   - `outputs/runs/baseline_small_corridor/metrics/zero_shot_layouts.csv`
@@ -500,6 +607,10 @@ Conclusion: the `small_corridor` failure happens before the soup-delivery chain 
   - `outputs/runs/router_onion_layouts/router_config.resolved.json`
   - `outputs/runs/router_onion_layouts/metrics/router_eval.csv`
   - `outputs/runs/router_onion_layouts/metrics/router_eval.json`
+- Improved onion-router run:
+  - `outputs/runs/router_onion_layouts_seed52_random0/router_config.resolved.json`
+  - `outputs/runs/router_onion_layouts_seed52_random0/metrics/router_eval.csv`
+  - `outputs/runs/router_onion_layouts_seed52_random0/metrics/router_eval.json`
 - Demos:
   - `outputs/runs/baseline_simple/demo/demo.gif`
   - `outputs/runs/no_shaping_simple/demo/demo.gif`
@@ -524,9 +635,8 @@ Conclusion: the `small_corridor` failure happens before the soup-delivery chain 
 The next project direction should move beyond naive multi-layout mixing:
 
 1. Focus `small_corridor`: inspect trajectories and try a more structured curriculum, scripted warm start, or stronger layout-specific shaping instead of merely adding more PPO budget.
-2. Add partner-generalization checks for `random0_long`, `random1`, and `unident_s`, because the current strong numbers are self-play specialist results.
-3. Add periodic checkpoint selection for specialist runs, because training reward can be non-monotonic and the final checkpoint is not guaranteed to be best.
-4. Try a policy-selection or layout-conditioned comparison only after using the expanded router as the benchmark.
-5. Stronger partner-diversity: include held-out partner seeds and evaluate against them, not only against training partners.
-6. Reward redesign: add or tune shaping around pot progress, dish pickup, and delivery so high shaped reward correlates with soups delivered.
-7. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.
+2. Add periodic checkpoint selection for specialist runs, because training reward can be non-monotonic and the final checkpoint is not guaranteed to be best.
+3. Try a policy-selection or layout-conditioned comparison only after using the improved router as the benchmark.
+4. Stronger partner-diversity: use held-out partners during training, not only during evaluation, especially for the brittle `random1` layout.
+5. Reward redesign: add or tune shaping around pot progress, dish pickup, and delivery so high shaped reward correlates with soups delivered.
+6. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.

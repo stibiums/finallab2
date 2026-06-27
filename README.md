@@ -92,6 +92,14 @@ bash scripts/train.sh configs/baseline_random1.json
 bash scripts/train.sh configs/baseline_unident_s.json
 ```
 
+Train held-out hard-layout partner seeds:
+
+```bash
+bash scripts/train.sh configs/baseline_random0_long_seed52.json
+bash scripts/train.sh configs/baseline_random1_seed71.json
+bash scripts/train.sh configs/baseline_unident_s_seed81.json
+```
+
 You can override common options:
 
 ```bash
@@ -165,6 +173,30 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
 
 This keeps `simple` from the router config, replaces `random0` with the stronger long-budget specialist, and adds the successful `random1` and `unident_s` specialists. `small_corridor` is intentionally left unrouted until a nonzero specialist exists.
 
+Evaluate the improved onion-layout router:
+
+```bash
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route simple=outputs/runs/curriculum_simple_random0 \
+  --route random0=outputs/runs/baseline_random0_long_seed52 \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --output-dir outputs/runs/router_onion_layouts_seed52_random0 \
+  --output-name router_eval
+```
+
+Run hard-layout partner-robustness matrices:
+
+```bash
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1
+```
+
+Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_seed52` on `random0` and `baseline_unident_s` / `baseline_unident_s_seed81` on `unident_s`.
+
 ## Suggested Experiment Table
 
 | Run | Config | Purpose |
@@ -177,10 +209,13 @@ This keeps `simple` from the router config, replaces `random0` with the stronger
 | staged simple+random0 | `configs/curriculum_simple_random0.json` | Fine-tune from `simple` baseline while periodically evaluating both layouts |
 | random0 expert | `configs/baseline_random0.json` | Test whether `random0` is learnable as a single-layout specialist |
 | random0 long expert | `configs/baseline_random0_long.json` | Test whether more budget makes the hard-layout specialist reliable |
+| random0 long held-out seed | `configs/baseline_random0_long_seed52.json` | Improve the `random0` route and test hard-layout partner compatibility |
 | small corridor expert | `configs/baseline_small_corridor.json` | Test whether `small_corridor` is learnable with default specialist training |
 | small corridor shaping | `configs/small_corridor_shaping_v1.json` | Test whether distance shaping opens the failed `small_corridor` layout |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
+| random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |
+| unident_s held-out seed | `configs/baseline_unident_s_seed81.json` | Test whether `unident_s` is robust across independently trained partners |
 | simple+random0 router | `configs/router_simple_random0.json` | Compose map specialists and measure routed coverage |
 
 Useful report metrics:
