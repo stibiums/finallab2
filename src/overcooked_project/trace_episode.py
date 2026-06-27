@@ -59,6 +59,8 @@ def trace_episode(
     deterministic: bool = True,
     output_name: str = "trace",
     layout: str | None = None,
+    start_state_mode: str | None = None,
+    standard_start: bool = False,
 ) -> dict[str, Any]:
     register_envs()
     run_dir = Path(run_dir)
@@ -68,6 +70,12 @@ def trace_episode(
         config["layout_name"] = layout
         config["layout_names"] = [layout]
         config.pop("layout_sampling_weights", None)
+    if standard_start:
+        config = dict(config)
+        config.pop("start_state_mode", None)
+    elif start_state_mode is not None:
+        config = dict(config)
+        config["start_state_mode"] = start_state_mode
 
     trace_dir = run_dir / "traces"
     trace_dir.mkdir(parents=True, exist_ok=True)
@@ -149,6 +157,7 @@ def trace_episode(
     summary = {
         "run_dir": str(run_dir),
         "layout_name": initial_state["layout_name"],
+        "start_state_mode": config.get("start_state_mode", "standard"),
         "steps": steps,
         "deterministic": deterministic,
         "total_reward": total_reward,
@@ -189,6 +198,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stochastic", action="store_true", help="Use stochastic policy actions.")
     parser.add_argument("--output-name", default="trace")
     parser.add_argument("--layout", help="Force a single layout for tracing.")
+    parser.add_argument("--start-state-mode", help="Override config start_state_mode for tracing.")
+    parser.add_argument(
+        "--standard-start",
+        action="store_true",
+        help="Remove any configured start_state_mode for standard-start tracing.",
+    )
     return parser
 
 
@@ -200,6 +215,8 @@ def main() -> None:
         deterministic=not args.stochastic,
         output_name=args.output_name,
         layout=args.layout,
+        start_state_mode=args.start_state_mode,
+        standard_start=args.standard_start,
     )
 
 

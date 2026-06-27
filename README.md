@@ -100,6 +100,21 @@ bash scripts/train.sh configs/small_corridor_structured_shaping_v2.json
 bash scripts/train.sh configs/small_corridor_structured_shaping_v3.json
 ```
 
+Fine-tune the structured v3 checkpoint on the isolated `small_corridor` delivery segment:
+
+```bash
+bash scripts/train_curriculum.sh configs/small_corridor_delivery_warmstart_from_v3.json
+```
+
+Collect scripted delivery demonstrations for behavior cloning or supervised pretraining:
+
+```bash
+bash scripts/collect_delivery_demos.sh \
+  --episodes 100 \
+  --max-steps 40 \
+  --output outputs/demos/small_corridor_delivery_scripted.json
+```
+
 Train held-out hard-layout partner seeds:
 
 ```bash
@@ -224,6 +239,8 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | small corridor structured shaping v1 | `configs/small_corridor_structured_shaping_v1.json` | Add wrapper-level pickup and progress shaping after the original distance reward path proved inactive |
 | small corridor structured shaping v2 | `configs/small_corridor_structured_shaping_v2.json` | Add orientation-aware progress and switch empty-agent target from onion source to dish source after pot progress |
 | small corridor structured shaping v3 | `configs/small_corridor_structured_shaping_v3.json` | Add anti-farming guards; reaches soup pickup but still fails final serving |
+| small corridor delivery warm start | `configs/small_corridor_delivery_warmstart_from_v3.json` | Continue from structured v3 on soup-held delivery states; PPO still fails sparse delivery |
+| scripted delivery demos | `scripts/collect_delivery_demos.sh` | Generate clean final-delivery trajectories for later behavior cloning |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |

@@ -6,9 +6,14 @@ from dataclasses import dataclass
 import gym
 import numpy as np
 from gym.envs.registration import register, registry
-from overcooked_ai_py.mdp.actions import Action
+from overcooked_ai_py.mdp.actions import Action, Direction
 from overcooked_ai_py.mdp.overcooked_env import OvercookedEnv
-from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld
+from overcooked_ai_py.mdp.overcooked_mdp import (
+    ObjectState,
+    OvercookedGridworld,
+    OvercookedState,
+    PlayerState,
+)
 from overcooked_ai_py.planning.planners import MediumLevelPlanner, NO_COUNTERS_PARAMS
 from pantheonrl.common.multiagentenv import SimultaneousEnv
 
@@ -40,6 +45,7 @@ class ConfigurableOvercookedMultiEnv(SimultaneousEnv):
         horizon: int = 400,
         reward_shaping: dict[str, float] | None = None,
         event_reward_shaping: dict[str, object] | None = None,
+        start_state_mode: str | None = None,
         seed: int | None = None,
     ):
         super().__init__()
@@ -53,6 +59,7 @@ class ConfigurableOvercookedMultiEnv(SimultaneousEnv):
         if reward_shaping is not None:
             self.reward_shaping.update(reward_shaping)
         self.event_reward_shaping = dict(event_reward_shaping or {})
+        self.start_state_mode = start_state_mode
         self._distance_maps: dict[tuple[str, tuple[str, ...]], dict[tuple[int, int], int]] = {}
         self._interaction_goals: dict[
             tuple[str, tuple[str, ...]], dict[tuple[int, int], set[tuple[int, int]]]
@@ -99,7 +106,11 @@ class ConfigurableOvercookedMultiEnv(SimultaneousEnv):
             NO_COUNTERS_PARAMS,
             force_compute=False,
         )
-        base_env = OvercookedEnv(mdp, horizon=self.horizon)
+        base_env = OvercookedEnv(
+            mdp,
+            start_state_fn=self._start_state_fn_for_layout(layout_name),
+            horizon=self.horizon,
+        )
         featurize_fn = lambda state, mdp=mdp, mlp=mlp: mdp.featurize_state(state, mlp)
         return LayoutRuntime(
             layout_name=layout_name,
@@ -197,6 +208,33 @@ class ConfigurableOvercookedMultiEnv(SimultaneousEnv):
             return state_string
         print(state_string)
         return None
+
+    def _start_state_fn_for_layout(self, layout_name: str):
+        if self.start_state_mode in (None, "", "standard"):
+            return None
+        if self.start_state_mode == "small_corridor_delivery":
+            if layout_name != "small_corridor":
+                raise ValueError(
+                    "start_state_mode='small_corridor_delivery' only supports "
+                    "layout_name='small_corridor'."
+                )
+            return self._small_corridor_delivery_start_state
+        raise ValueError(f"Unsupported start_state_mode: {self.start_state_mode}")
+
+    def _small_corridor_delivery_start_state(self) -> OvercookedState:
+        holder_idx = int(self.rng.integers(0, 2))
+        holder_positions = [(x, 3) for x in range(1, 12)]
+        holder_pos = holder_positions[int(self.rng.integers(0, len(holder_positions)))]
+        other_pos = (10, 1) if holder_idx == 0 else (5, 1)
+
+        players = []
+        for player_idx in range(2):
+            if player_idx == holder_idx:
+                soup = ObjectState("soup", holder_pos, ("onion", 3, 20))
+                players.append(PlayerState(holder_pos, Direction.WEST, soup))
+            else:
+                players.append(PlayerState(other_pos, Direction.WEST))
+        return OvercookedState(players, {}, order_list=None)
 
     def _compute_event_shaped_reward(self, prev_state, next_state) -> float:
         if not self.event_reward_shaping:

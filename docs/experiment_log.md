@@ -201,6 +201,13 @@ bash scripts/trace_episode.sh outputs/runs/small_corridor_structured_shaping_v3 
   --output-name small_corridor_structured_stochastic_trace \
   --max-steps 400 \
   --stochastic
+
+bash scripts/train_curriculum.sh configs/small_corridor_delivery_warmstart_from_v3.json
+
+bash scripts/collect_delivery_demos.sh \
+  --episodes 100 \
+  --max-steps 40 \
+  --output outputs/demos/small_corridor_delivery_scripted.json
 ```
 
 ## Run Summary
@@ -225,6 +232,7 @@ bash scripts/trace_episode.sh outputs/runs/small_corridor_structured_shaping_v3 
 | `small_corridor_structured_shaping_v1` | 62 | 300000 | 120.12 | 0.00 | 0.0 | 134.15 | - |
 | `small_corridor_structured_shaping_v2` | 63 | 300000 | 120.98 | 0.00 | 0.0 | 18.41 | - |
 | `small_corridor_structured_shaping_v3` | 64 | 300000 | 122.02 | 0.00 | 0.0 | 93.46 | - |
+| `small_corridor_delivery_warmstart_from_v3` | 65 | 100000 | 46.51 | 0.00 | 0.0 | 73.76 | - |
 | `baseline_random1` | 70 | 300000 | 116.94 | 5.80 | 116.0 | 225.10 | 6.0 |
 | `baseline_random1_seed71` | 71 | 300000 | 116.99 | 5.20 | 104.0 | 202.80 | - |
 | `baseline_unident_s` | 80 | 300000 | 118.35 | 12.70 | 254.0 | 481.25 | 13.0 |
@@ -587,6 +595,40 @@ Trace diagnosis:
 
 Conclusion: structured shaping improves the failure mode, but it does not solve `small_corridor`. The bottleneck moved from "no useful subgoal" to "soup pickup without serving." Continuing to tune generic reward coefficients is likely low-yield. The next attempt should be a delivery-stage curriculum or scripted warm start, for example by training from states where a soup has already been picked up, collecting scripted trajectories for the final delivery segment, or using behavior cloning/subtask pretraining before PPO.
 
+## Step 13: Small Corridor Delivery Warm Start And Scripted Demos
+
+This step turns the Step 12 diagnosis into a targeted delivery-stage experiment. The environment wrapper now supports an optional `start_state_mode`. For `small_corridor_delivery`, each episode starts with one randomly selected agent holding a cooked onion soup somewhere along the delivery corridor at `y=3`. This includes positions near the serving station and positions near the pots, so the subtask ranges from final turn-and-interact to the full right-to-left delivery walk.
+
+The training run uses `train_curriculum.py` to continue from `small_corridor_structured_shaping_v3`, rather than starting from scratch.
+
+Training setup:
+
+| Run | Init run | Start mode | Horizon | Timesteps | Reward signal |
+| --- | --- | --- | ---: | ---: | --- |
+| `small_corridor_delivery_warmstart_from_v3` | `small_corridor_structured_shaping_v3` | `small_corridor_delivery` | 120 | 100000 | sparse delivery plus held-soup progress to serving |
+
+Warm-start curriculum evaluation:
+
+| Trained steps | Mean episode reward | Mean sparse reward | Mean soups | Decision |
+| ---: | ---: | ---: | ---: | --- |
+| 0 | 34.07 | 0.0 | 0.00 | Initial v3 checkpoint does not deliver even when starting with soup. |
+| 25000 | 41.26 | 0.0 | 0.00 | Progress reward rises, sparse still absent. |
+| 50000 | 56.44 | 0.0 | 0.00 | More shaped/progress reward, still no delivery. |
+| 75000 | 77.02 | 0.0 | 0.00 | Best warm-start episode reward, still no sparse reward. |
+| 100000 | 73.76 | 0.0 | 0.00 | PPO warm start fails the final serving action. |
+
+Conclusion from PPO warm start: starting closer to the delivery subtask is still not enough. The agents learn to increase progress-shaped reward, but deterministic evaluation never triggers a soup delivery. This is a useful negative result because it rules out a simple "just start from soup-held states" fix.
+
+Scripted delivery demos:
+
+| Artifact | Episodes | Successes | Success rate | Mean success steps | Meaning |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `outputs/demos/small_corridor_delivery_scripted.json` | 100 | 100 | 1.00 | 6.90 | The delivery subtask is mechanically feasible and can be scripted reliably. |
+
+The scripted controller is intentionally simple: the soup-holding agent moves west along the corridor to `(1, 3)`, turns south toward the serving station, then interacts. The other agent stays still. This creates a clean demonstration dataset for the exact failure segment observed in Step 12 and Step 13.
+
+Next decision: stop relying on PPO exploration for the final delivery segment. The next concrete implementation should use `outputs/demos/small_corridor_delivery_scripted.json` for behavior cloning or supervised action pretraining, then fine-tune with PPO from that policy.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -615,6 +657,8 @@ Conclusion: structured shaping improves the failure mode, but it does not solve 
 24. The upstream Overcooked-AI distance shaping parameters are inactive in this checkout because the distance-reward call is commented out, so layout-specific progress shaping has to be implemented in the wrapper if we want it to affect training.
 25. Structured `small_corridor` shaping can move the agents from "no useful subgoal" to "pot progress and soup pickup," but the delivery leg to the left-side serving station still fails.
 26. The next `small_corridor` optimization should focus on delivery-stage warm starts, scripted subtask trajectories, or behavior-cloning pretraining instead of more generic reward coefficient tuning.
+27. Delivery warm-start PPO from the v3 checkpoint still gets 0.00 soups after 100k steps, even though shaped/progress reward rises from 34.07 to 73.76.
+28. Scripted delivery demos solve the isolated final delivery subtask with 100/100 success and provide the first clean data source for behavior cloning.
 
 ## Artifacts
 
@@ -667,6 +711,10 @@ Conclusion: structured shaping improves the failure mode, but it does not solve 
   - `outputs/runs/small_corridor_structured_shaping_v3/metrics/eval_stochastic.json`
   - `outputs/runs/small_corridor_structured_shaping_v3/traces/small_corridor_structured_trace.json`
   - `outputs/runs/small_corridor_structured_shaping_v3/traces/small_corridor_structured_stochastic_trace.json`
+- Delivery warm-start and scripted demo artifacts:
+  - `outputs/runs/small_corridor_delivery_warmstart_from_v3/metrics/curriculum_eval.csv`
+  - `outputs/runs/small_corridor_delivery_warmstart_from_v3/metrics/train_summary.json`
+  - `outputs/demos/small_corridor_delivery_scripted.json`
 - Phase 2 specialist runs:
   - `outputs/runs/baseline_small_corridor/metrics/eval_metrics.json`
   - `outputs/runs/baseline_small_corridor/metrics/zero_shot_layouts.csv`

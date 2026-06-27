@@ -43,10 +43,24 @@ def evaluate_models(
     episodes: int = 20,
     deterministic: bool = True,
     output_name: str = "eval_metrics",
+    layout: str | None = None,
+    start_state_mode: str | None = None,
+    standard_start: bool = False,
 ) -> dict:
     register_envs()
     run_dir = Path(run_dir)
     config = load_json(run_dir / "config.resolved.json")
+    if layout is not None:
+        config = dict(config)
+        config["layout_name"] = layout
+        config["layout_names"] = [layout]
+        config.pop("layout_sampling_weights", None)
+    if standard_start:
+        config = dict(config)
+        config.pop("start_state_mode", None)
+    elif start_state_mode is not None:
+        config = dict(config)
+        config["start_state_mode"] = start_state_mode
     metrics_dir = run_dir / "metrics"
     metrics_dir.mkdir(parents=True, exist_ok=True)
 
@@ -70,6 +84,8 @@ def evaluate_models(
     summary = {
         "episodes": episodes,
         "deterministic": deterministic,
+        "layout_name": config["layout_name"],
+        "start_state_mode": config.get("start_state_mode", "standard"),
         "mean_episode_reward": mean(rewards),
         "std_episode_reward": pstdev(rewards) if len(rewards) > 1 else 0.0,
         "mean_sparse_reward": mean(sparse_rewards),
@@ -87,6 +103,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--episodes", type=int, default=20)
     parser.add_argument("--stochastic", action="store_true", help="Use stochastic policy actions.")
     parser.add_argument("--output-name", default="eval_metrics")
+    parser.add_argument("--layout", help="Force a single layout for evaluation.")
+    parser.add_argument("--start-state-mode", help="Override config start_state_mode for evaluation.")
+    parser.add_argument(
+        "--standard-start",
+        action="store_true",
+        help="Remove any configured start_state_mode for standard-start evaluation.",
+    )
     return parser
 
 
@@ -97,6 +120,9 @@ def main() -> None:
         episodes=args.episodes,
         deterministic=not args.stochastic,
         output_name=args.output_name,
+        layout=args.layout,
+        start_state_mode=args.start_state_mode,
+        standard_start=args.standard_start,
     )
 
 
