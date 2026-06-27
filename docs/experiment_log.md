@@ -93,6 +93,44 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
   --output-name router_eval
 
 bash scripts/record_demo.sh outputs/runs/baseline_random0_long --layout random0 --output-name random0_long_demo --max-steps 400
+
+bash scripts/train.sh configs/baseline_small_corridor.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_small_corridor \
+  --partner-run-dir outputs/runs/baseline_small_corridor \
+  --layout small_corridor --layout simple --layout random0 --layout random1 --layout unident_s --layout simple_tomato \
+  --output-name zero_shot_layouts
+
+bash scripts/train.sh configs/small_corridor_shaping_v1.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/small_corridor_shaping_v1 \
+  --partner-run-dir outputs/runs/small_corridor_shaping_v1 \
+  --layout small_corridor --layout simple --layout random0 --layout random1 --layout unident_s --layout simple_tomato \
+  --output-name zero_shot_layouts
+
+bash scripts/train.sh configs/baseline_random1.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --layout random1 --layout simple --layout random0 --layout small_corridor --layout unident_s --layout simple_tomato \
+  --output-name zero_shot_layouts
+
+bash scripts/train.sh configs/baseline_unident_s.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_unident_s \
+  --partner-run-dir outputs/runs/baseline_unident_s \
+  --layout unident_s --layout simple --layout random0 --layout random1 --layout small_corridor --layout simple_tomato \
+  --output-name zero_shot_layouts
+
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route random0=outputs/runs/baseline_random0_long \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --output-dir outputs/runs/router_onion_layouts \
+  --output-name router_eval
+
+bash scripts/record_demo.sh outputs/runs/baseline_random1 --layout random1 --output-name random1_demo --max-steps 400
+bash scripts/record_demo.sh outputs/runs/baseline_unident_s --layout unident_s --output-name unident_s_demo --max-steps 400
 ```
 
 ## Run Summary
@@ -111,6 +149,11 @@ bash scripts/record_demo.sh outputs/runs/baseline_random0_long --layout random0 
 | `router_simple_random0` | - | 0 | - | 9.55 / 0.85 | 191.0 / 17.0 | 360.40 / 47.70 | - |
 | `baseline_random0_long` | 50 | 800000 | 306.26 | 6.30 | 126.0 | 244.45 | 5.0 |
 | `router_simple_random0_long` | - | 0 | - | 9.55 / 6.30 | 191.0 / 126.0 | 360.40 / 244.45 | - |
+| `baseline_small_corridor` | 60 | 300000 | 118.54 | 0.00 | 0.0 | 0.00 | - |
+| `small_corridor_shaping_v1` | 61 | 300000 | 116.26 | 0.00 | 0.0 | 0.00 | - |
+| `baseline_random1` | 70 | 300000 | 116.94 | 5.80 | 116.0 | 225.10 | 6.0 |
+| `baseline_unident_s` | 80 | 300000 | 118.35 | 12.70 | 254.0 | 481.25 | 13.0 |
+| `router_onion_layouts` | - | 0 | - | 9.55 / 6.30 / 5.80 / 12.70 | 191.0 / 126.0 / 116.0 / 254.0 | 360.40 / 244.45 / 225.10 / 481.25 | - |
 
 ## Step 1: Reward-Shaping Ablation
 
@@ -306,6 +349,52 @@ Updated router evaluation:
 
 Conclusion: extra training budget strongly improves the `random0` specialist, from 0.85 to 6.30 soups. The updated router's supported-layout average rises from 5.20 to 7.925 soups, and its supported-layout minimum rises from 0.85 to 6.30 soups. This clears the Phase 1 success criterion, so the next step should move to Phase 2: train specialists for `small_corridor`, `random1`, and `unident_s`.
 
+## Step 9: Phase 2 Specialist Coverage
+
+This step trains the remaining planned onion-layout specialists. The goal is not to force one unified policy to generalize, but to check which layouts are learnable as single-layout self-play specialists and then expand the router only with successful specialists.
+
+Training setup:
+
+| Run | Layout | Seed | Timesteps | Train seconds | Shaping change |
+| --- | --- | ---: | ---: | ---: | --- |
+| `baseline_small_corridor` | `small_corridor` | 60 | 300000 | 118.54 | default shaping |
+| `small_corridor_shaping_v1` | `small_corridor` | 61 | 300000 | 116.26 | adds distance shaping 0.1 |
+| `baseline_random1` | `random1` | 70 | 300000 | 116.94 | default shaping |
+| `baseline_unident_s` | `unident_s` | 80 | 300000 | 118.35 | default shaping |
+
+Self-play evaluation:
+
+| Run | Layout | Mean soups | Mean sparse reward | Mean episode reward | Decision |
+| --- | --- | ---: | ---: | ---: | --- |
+| `baseline_small_corridor` | `small_corridor` | 0.00 | 0.0 | 0.00 | Failed; do not route. |
+| `small_corridor_shaping_v1` | `small_corridor` | 0.00 | 0.0 | 0.00 | Failed; distance shaping did not open exploration. |
+| `baseline_random1` | `random1` | 5.80 | 116.0 | 225.10 | Success; add to router. |
+| `baseline_unident_s` | `unident_s` | 12.70 | 254.0 | 481.25 | Success; add to router. |
+
+Zero-shot pattern:
+
+| Ego run | Training layout score | Other onion layouts | Interpretation |
+| --- | ---: | --- | --- |
+| `baseline_small_corridor` | 0.00 on `small_corridor` | 0.00 everywhere | No useful specialist emerged. |
+| `small_corridor_shaping_v1` | 0.00 on `small_corridor` | 0.00 everywhere | Distance shaping did not help this layout. |
+| `baseline_random1` | 5.80 on `random1` | 0.00 on `random0`, `small_corridor`, `unident_s` | Strong specialist, no zero-shot transfer. |
+| `baseline_unident_s` | 12.70 on `unident_s` | 0.00 on `simple`, `random0`, `random1`, `small_corridor` | Strong specialist, no meaningful transfer. |
+
+Expanded router evaluation:
+
+| Layout | Selected run | Mean soups | Mean sparse reward | Mean episode reward | Status | Error |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | 191.0 | 360.40 | ok | |
+| `random0` | `baseline_random0_long` | 6.30 | 126.0 | 244.45 | ok | |
+| `small_corridor` | - | - | - | - | skipped | `NoRoute` |
+| `random1` | `baseline_random1` | 5.80 | 116.0 | 225.10 | ok | |
+| `unident_s` | `baseline_unident_s` | 12.70 | 254.0 | 481.25 | ok | |
+| `simple_tomato` | - | - | - | - | skipped | `NoRoute` |
+
+The supported-layout average is 8.59 soups and the supported-layout minimum is 5.80 soups over `simple`, `random0`, `random1`, and `unident_s`.
+
+Conclusion: Phase 2 strongly supports the specialist-routing story. `random1` and `unident_s` are learnable with the same 300k default PPO setup, while `small_corridor` remains the hard unresolved layout even after adding simple distance shaping. The router now covers four useful layouts with nonzero sparse reward, but the project should be honest that `small_corridor` still needs a different optimization strategy.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -322,6 +411,10 @@ Conclusion: extra training budget strongly improves the `random0` specialist, fr
 12. Increasing `random0` specialist training to 800k steps improves `random0` from 0.85 to 6.30 soups.
 13. The updated router reaches 9.55 soups on `simple` and 6.30 on `random0`, so specialist routing is now a strong practical baseline.
 14. Cross-layout capability is currently best treated as a composition problem over specialists, not as a simple zero-shot or naive mixed-training problem.
+15. `small_corridor` is the clearest remaining failure: both the default 300k specialist and the distance-shaping variant stay at 0.00 soups and 0.0 shaped/sparse evaluation reward.
+16. `random1` is learnable as a 300k specialist, reaching 5.80 soups.
+17. `unident_s` is the strongest current hard-layout specialist, reaching 12.70 soups.
+18. The expanded onion router reaches 8.59 supported-layout average soups and 5.80 supported-layout minimum soups over four routed layouts, while explicitly skipping `small_corridor` and tomato layouts.
 
 ## Artifacts
 
@@ -351,6 +444,15 @@ Conclusion: extra training budget strongly improves the `random0` specialist, fr
   - `outputs/runs/baseline_random0_long/metrics/train_summary.json`
   - `outputs/runs/baseline_random0_long/metrics/eval_metrics.json`
   - `outputs/runs/baseline_random0_long/metrics/zero_shot_layouts.csv`
+- Phase 2 specialist runs:
+  - `outputs/runs/baseline_small_corridor/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_small_corridor/metrics/zero_shot_layouts.csv`
+  - `outputs/runs/small_corridor_shaping_v1/metrics/eval_metrics.json`
+  - `outputs/runs/small_corridor_shaping_v1/metrics/zero_shot_layouts.csv`
+  - `outputs/runs/baseline_random1/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_random1/metrics/zero_shot_layouts.csv`
+  - `outputs/runs/baseline_unident_s/metrics/eval_metrics.json`
+  - `outputs/runs/baseline_unident_s/metrics/zero_shot_layouts.csv`
 - Layout-router run:
   - `outputs/runs/router_simple_random0/router_config.resolved.json`
   - `outputs/runs/router_simple_random0/metrics/router_eval.csv`
@@ -359,6 +461,10 @@ Conclusion: extra training budget strongly improves the `random0` specialist, fr
   - `outputs/runs/router_simple_random0_long/router_config.resolved.json`
   - `outputs/runs/router_simple_random0_long/metrics/router_eval.csv`
   - `outputs/runs/router_simple_random0_long/metrics/router_eval.json`
+- Expanded onion-router run:
+  - `outputs/runs/router_onion_layouts/router_config.resolved.json`
+  - `outputs/runs/router_onion_layouts/metrics/router_eval.csv`
+  - `outputs/runs/router_onion_layouts/metrics/router_eval.json`
 - Demos:
   - `outputs/runs/baseline_simple/demo/demo.gif`
   - `outputs/runs/no_shaping_simple/demo/demo.gif`
@@ -371,15 +477,17 @@ Conclusion: extra training budget strongly improves the `random0` specialist, fr
   - `outputs/runs/baseline_random0/demo/random0_demo.gif`
   - `outputs/runs/baseline_random0/demo/simple_transfer_demo.gif`
   - `outputs/runs/baseline_random0_long/demo/random0_long_demo.gif`
+  - `outputs/runs/baseline_random1/demo/random1_demo.gif`
+  - `outputs/runs/baseline_unident_s/demo/unident_s_demo.gif`
 
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
 
-1. Add specialists for `small_corridor`, `random1`, and `unident_s`, then expand the router coverage table.
-2. Add periodic checkpoint selection for long specialist runs, because `baseline_random0_long` improved strongly but training reward was not monotonic.
-3. Try reverse curriculum: initialize from `baseline_random0`, then introduce `simple` with a small sampling weight, to see whether the easier layout can be added without destroying `random0`.
-4. Add layout-conditioning or policy selection before claiming one unified policy generalizes.
+1. Focus `small_corridor`: inspect trajectories and try a more structured curriculum, scripted warm start, or stronger layout-specific shaping instead of merely adding more PPO budget.
+2. Add partner-generalization checks for `random0_long`, `random1`, and `unident_s`, because the current strong numbers are self-play specialist results.
+3. Add periodic checkpoint selection for specialist runs, because training reward can be non-monotonic and the final checkpoint is not guaranteed to be best.
+4. Try a policy-selection or layout-conditioned comparison only after using the expanded router as the benchmark.
 5. Stronger partner-diversity: include held-out partner seeds and evaluate against them, not only against training partners.
 6. Reward redesign: add or tune shaping around pot progress, dish pickup, and delivery so high shaped reward correlates with soups delivered.
 7. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.

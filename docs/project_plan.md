@@ -14,12 +14,15 @@ Key results so far:
 | --- | ---: | --- |
 | `simple` specialist | 9.55 soups | The easy map is basically solved well enough for the report. |
 | `random0` specialist | 6.30 soups | Longer single-layout training makes `random0` useful. |
+| `random1` specialist | 5.80 soups | The default 300k specialist is usable. |
+| `unident_s` specialist | 12.70 soups | This is the strongest current hard-layout specialist. |
+| `small_corridor` specialist | 0.00 soups | Default and distance-shaping specialists both fail. |
 | naive multi-layout PPO | 0.00 soups on most maps | Simple layout mixing is not enough. |
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
-| `simple + random0` router | 9.55 on `simple`, 6.30 on `random0` | Specialist composition is currently the strongest route. |
+| expanded onion router | 8.59 average soups, 5.80 min soups | Specialist composition is currently the strongest route over supported layouts. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
-The main bottleneck is no longer whether the baseline can run. The bottleneck is now policy coverage across the remaining onion layouts: `small_corridor`, `random1`, and `unident_s`.
+The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now `small_corridor` coverage and partner robustness for the successful specialists.
 
 ## Project Goal
 
@@ -98,7 +101,7 @@ Decision rule:
 
 ## Phase 2: Expand Specialist Coverage
 
-Status: next immediate phase.
+Status: mostly completed; `small_corridor` remains unresolved.
 
 Target layouts:
 
@@ -114,28 +117,49 @@ Planned experiments:
 | `baseline_random1` | `random1` | 300k steps | mean soups > 1.0 |
 | `baseline_unident_s` | `unident_s` | 300k steps | mean soups > 1.0 |
 
-Router update after each successful specialist:
+Completed results:
+
+| Run | Layout | Timesteps | Mean soups | Mean sparse reward | Decision |
+| --- | --- | ---: | ---: | ---: | --- |
+| `baseline_small_corridor` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; do not route. |
+| `small_corridor_shaping_v1` | `small_corridor` | 300000 | 0.00 | 0.0 | Failed; distance shaping did not help. |
+| `baseline_random1` | `random1` | 300000 | 5.80 | 116.0 | Success; add to router. |
+| `baseline_unident_s` | `unident_s` | 300000 | 12.70 | 254.0 | Success; add to router. |
+
+Router update for successful specialists:
 
 ```bash
 bash scripts/evaluate_router.sh configs/router_simple_random0.json \
   --route simple=outputs/runs/curriculum_simple_random0 \
   --route random0=outputs/runs/baseline_random0_long \
-  --route small_corridor=outputs/runs/baseline_small_corridor \
   --route random1=outputs/runs/baseline_random1 \
   --route unident_s=outputs/runs/baseline_unident_s \
   --output-dir outputs/runs/router_onion_layouts \
   --output-name router_eval
 ```
 
+Expanded router result:
+
+| Layout | Selected run | Mean soups | Status |
+| --- | --- | ---: | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | ok |
+| `random0` | `baseline_random0_long` | 6.30 | ok |
+| `small_corridor` | - | - | skipped `NoRoute` |
+| `random1` | `baseline_random1` | 5.80 | ok |
+| `unident_s` | `baseline_unident_s` | 12.70 | ok |
+
+Supported-layout average: 8.59 soups.
+Supported-layout minimum: 5.80 soups.
+
 Phase success criterion:
 
-- Minimum: `simple` plus at least two harder layouts have nonzero sparse reward.
-- Good: four onion layouts have nonzero sparse reward.
-- Strong: router supported-layout average >= 4 soups and supported-layout minimum >= 1 soup.
+- Minimum: `simple` plus at least two harder layouts have nonzero sparse reward. Satisfied.
+- Good: four supported onion-style layouts have nonzero sparse reward. Satisfied for `simple`, `random0`, `random1`, and `unident_s`; not satisfied for `small_corridor`.
+- Strong: router supported-layout average >= 4 soups and supported-layout minimum >= 1 soup. Satisfied over routed layouts.
 
 ## Phase 3: Robustness And Partner Generalization
 
-Status: after router coverage is better than the current two-layout version.
+Status: next immediate phase, alongside `small_corridor` diagnosis.
 
 Why this phase matters:
 
@@ -232,7 +256,7 @@ For every new experiment:
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| `random0` remains weak | Router improvement stays small | Try seeds, then reward shaping, then report as limitation if needed |
+| `small_corridor` remains weak | Full layout coverage stays incomplete | Try structured curriculum, scripted warm start, or stronger layout-specific shaping |
 | Shaped reward rises without sparse reward | Misleading training curves | Always report soups delivered and sparse reward |
 | Tomato layouts keep failing | Coverage gap | Exclude tomato from main claims or patch featurizer as separate engineering work |
 | Partner overfitting | Self-play results look stronger than they are | Include partner matrix and held-out seeds |
@@ -242,16 +266,16 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Add `configs/baseline_small_corridor.json`.
-2. Train `baseline_small_corridor` for 300k steps.
-3. Evaluate it on `small_corridor` and the existing layout matrix.
-4. If it has nonzero sparse reward, add it to the router and re-run router evaluation.
-5. Repeat the same pattern for `random1` and `unident_s`.
-6. Update `docs/experiment_log.md` and the Notion experiment page after each specialist.
+1. Diagnose `small_corridor` with trajectory/demo inspection and environment-state traces.
+2. Try a more structured `small_corridor` approach: curriculum, scripted warm start, or stronger layout-specific shaping.
+3. Build partner-generalization matrices for `baseline_random0_long`, `baseline_random1`, and `baseline_unident_s`.
+4. Use `router_onion_layouts` as the main practical baseline for the report.
+5. Start assembling the report tables and demo package from `docs/experiment_log.md` and the saved GIFs.
 
-After each remaining-layout specialist, decide whether to:
+After each new attempt, decide whether to:
 
-- keep the specialist as a router route,
+- keep it as a router route,
+- use it only as a negative result,
 - extend its budget,
 - try another seed,
-- or redesign shaping for that layout.
+- or redesign the training setup for that layout.

@@ -83,6 +83,15 @@ Train the stronger long-budget `random0` specialist:
 bash scripts/train.sh configs/baseline_random0_long.json
 ```
 
+Train Phase 2 layout specialists:
+
+```bash
+bash scripts/train.sh configs/baseline_small_corridor.json
+bash scripts/train.sh configs/small_corridor_shaping_v1.json
+bash scripts/train.sh configs/baseline_random1.json
+bash scripts/train.sh configs/baseline_unident_s.json
+```
+
 You can override common options:
 
 ```bash
@@ -135,6 +144,19 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json
 
 This routes `simple` to `outputs/runs/curriculum_simple_random0` and `random0` to `outputs/runs/baseline_random0`. Layouts without a configured specialist are recorded as `status=skipped`, which makes the current coverage explicit.
 
+Evaluate the expanded onion-layout router:
+
+```bash
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route random0=outputs/runs/baseline_random0_long \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --output-dir outputs/runs/router_onion_layouts \
+  --output-name router_eval
+```
+
+This keeps `simple` from the router config, replaces `random0` with the stronger long-budget specialist, and adds the successful `random1` and `unident_s` specialists. `small_corridor` is intentionally left unrouted until a nonzero specialist exists.
+
 ## Suggested Experiment Table
 
 | Run | Config | Purpose |
@@ -147,6 +169,10 @@ This routes `simple` to `outputs/runs/curriculum_simple_random0` and `random0` t
 | staged simple+random0 | `configs/curriculum_simple_random0.json` | Fine-tune from `simple` baseline while periodically evaluating both layouts |
 | random0 expert | `configs/baseline_random0.json` | Test whether `random0` is learnable as a single-layout specialist |
 | random0 long expert | `configs/baseline_random0_long.json` | Test whether more budget makes the hard-layout specialist reliable |
+| small corridor expert | `configs/baseline_small_corridor.json` | Test whether `small_corridor` is learnable with default specialist training |
+| small corridor shaping | `configs/small_corridor_shaping_v1.json` | Test whether distance shaping opens the failed `small_corridor` layout |
+| random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
+| unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |
 | simple+random0 router | `configs/router_simple_random0.json` | Compose map specialists and measure routed coverage |
 
 Useful report metrics:
