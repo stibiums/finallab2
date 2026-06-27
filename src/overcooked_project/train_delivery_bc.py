@@ -56,6 +56,7 @@ def load_bc_dataset(demo_path: str | Path) -> dict[str, Any]:
             key: data.get(key)
             for key in [
                 "config",
+                "mode",
                 "episodes",
                 "max_steps",
                 "successes",
@@ -264,7 +265,7 @@ def train_delivery_bc(config: dict, args: argparse.Namespace) -> Path:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Behavior-clone the small_corridor delivery segment.")
+    parser = argparse.ArgumentParser(description="Behavior-clone scripted small_corridor demonstrations.")
     parser.add_argument("--config", default="configs/small_corridor_delivery_warmstart_from_v3.json")
     parser.add_argument("--demo-path", default="outputs/demos/small_corridor_delivery_scripted.json")
     parser.add_argument("--run-name", default="small_corridor_delivery_bc_from_v3")

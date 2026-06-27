@@ -16,14 +16,15 @@ Key results so far:
 | `random0` specialist | 8.85 soups | A second 800k seed makes `random0` stronger and useful. |
 | `random1` specialist | 5.80 soups | The default 300k specialist is usable. |
 | `unident_s` specialist | 12.70 soups | This is the strongest current hard-layout specialist. |
-| `small_corridor` specialist | 0.00 soups standard start; 1.00 soup delivery warm-start | Delivery BC solves the isolated final segment, but the full standard-start chain is still unsolved. |
+| `small_corridor` specialist | 1.00 soup standard start via full-chain scripted BC | PPO remains at 0.00 from standard start; BC proves the full first soup chain is feasible but has not learned a repeatable multi-soup loop. |
 | naive multi-layout PPO | 0.00 soups on most maps | Simple layout mixing is not enough. |
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
-| improved onion router | 9.23 average soups, 5.80 min soups | Specialist composition is currently the strongest route over supported layouts. |
+| PPO-only onion router | 9.23 average soups, 5.80 min soups over four PPO-routed layouts | Strongest pure-PPO specialist composition, but it skips `small_corridor`. |
+| onion router with `small_corridor` BC | 7.58 average soups, 1.00 min soups over five onion layouts | Broadest current coverage; the minimum is now the scripted-BC `small_corridor` specialist. |
 | hard-layout partner robustness | mixed | `unident_s` is robust, `random1` is brittle, and `random0` is asymmetric. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
-The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now `small_corridor` coverage and partner robustness for the successful specialists.
+The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now improving `small_corridor` beyond a one-soup scripted-BC specialist and strengthening partner robustness for the successful PPO specialists.
 
 ## Project Goal
 
@@ -103,7 +104,7 @@ Decision rule:
 
 ## Phase 2: Expand Specialist Coverage
 
-Status: mostly completed; `small_corridor` remains unresolved.
+Status: completed for first-soup coverage; `small_corridor` remains unresolved as a PPO/multi-soup policy.
 
 Target layouts:
 
@@ -131,6 +132,8 @@ Completed results:
 | `small_corridor_delivery_warmstart_from_v3` | `small_corridor` | 100000 | 0.00 | 0.0 | Failed as PPO, but confirms progress reward alone does not teach final serving. |
 | `small_corridor_delivery_bc_from_v3` | `small_corridor_delivery` | BC 40 epochs | 1.00 | 20.0 | Solves the isolated delivery warm-start, but gets 0.00 from the standard start. |
 | `small_corridor_delivery_bc_ppo_finetune` | `small_corridor_delivery` | 50000 | 1.00 | 20.0 | PPO fine-tuning preserves delivery BC, but still gets 0.00 from the standard start. |
+| `small_corridor_full_chain_bc_from_v3` | `small_corridor` | BC 60 epochs | 1.00 | 20.0 | Full-chain scripted BC solves the first standard-start soup. |
+| `small_corridor_full_chain_bc_ppo_finetune` | `small_corridor` | 50000 | 1.00 best / 0.90 final | 20.0 best / 18.0 final | PPO fine-tuning does not improve the BC policy; best checkpoint remains the initial BC. |
 | `baseline_random1` | `random1` | 300000 | 5.80 | 116.0 | Success; add to router. |
 | `baseline_unident_s` | `unident_s` | 300000 | 12.70 | 254.0 | Success; add to router. |
 
@@ -172,11 +175,35 @@ Updated router with `baseline_random0_long_seed52`:
 Updated supported-layout average: 9.23 soups.
 Updated supported-layout minimum: 5.80 soups.
 
+Router with full-chain `small_corridor` BC:
+
+```bash
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route simple=outputs/runs/curriculum_simple_random0 \
+  --route random0=outputs/runs/baseline_random0_long_seed52 \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --route small_corridor=outputs/runs/small_corridor_full_chain_bc_from_v3 \
+  --output-dir outputs/runs/router_onion_layouts_with_small_corridor_bc \
+  --output-name router_eval
+```
+
+| Layout | Selected run | Mean soups | Status |
+| --- | --- | ---: | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | ok |
+| `random0` | `baseline_random0_long_seed52` | 8.85 | ok |
+| `small_corridor` | `small_corridor_full_chain_bc_from_v3` | 1.00 | ok |
+| `random1` | `baseline_random1` | 5.80 | ok |
+| `unident_s` | `baseline_unident_s` | 12.70 | ok |
+
+Five-onion-layout average: 7.58 soups.
+Five-onion-layout minimum: 1.00 soups.
+
 Phase success criterion:
 
 - Minimum: `simple` plus at least two harder layouts have nonzero sparse reward. Satisfied.
-- Good: four supported onion-style layouts have nonzero sparse reward. Satisfied for `simple`, `random0`, `random1`, and `unident_s`; not satisfied for `small_corridor`.
-- Strong: router supported-layout average >= 4 soups and supported-layout minimum >= 1 soup. Satisfied over routed layouts.
+- Good: four supported onion-style layouts have nonzero sparse reward. Satisfied for PPO specialists; five onion layouts have nonzero sparse reward if the scripted-BC `small_corridor` specialist is allowed.
+- Strong: router supported-layout average >= 4 soups and supported-layout minimum >= 1 soup. Satisfied over all five onion layouts by the router with `small_corridor_full_chain_bc_from_v3`.
 
 ## Phase 3: Robustness And Partner Generalization
 
@@ -257,8 +284,9 @@ Required report components:
 5. Generalization failures: partner mismatch and zero-shot layout transfer.
 6. Naive multi-layout failure: high shaped reward does not imply soup delivery.
 7. Specialist/router improvement: coverage and supported-layout average/min.
-8. Remaining limitations: weak hard-layout specialists, tomato environment issue, partner brittleness.
-9. Demo GIFs and metric tables.
+8. Scripted/BC rescue for `small_corridor`: supervised full-chain demos solve the first soup where PPO exploration fails.
+9. Remaining limitations: `small_corridor` is one-soup and scripted-BC dependent, tomato environment issue, partner brittleness.
+10. Demo GIFs and metric tables.
 
 Recommended figures/tables:
 
@@ -287,7 +315,7 @@ For every new experiment:
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| `small_corridor` remains weak | Full layout coverage stays incomplete | Expand scripted/BC data beyond delivery to the full onion-pot-dish-soup chain or use a hierarchical subtask controller |
+| `small_corridor` remains one-soup only | Full layout coverage is shallow despite nonzero sparse reward | Collect multi-cycle and perturbed full-chain demos, or use a hierarchical subtask controller instead of expecting plain PPO to discover the loop |
 | Shaped reward rises without sparse reward | Misleading training curves | Always report soups delivered and sparse reward |
 | Tomato layouts keep failing | Coverage gap | Exclude tomato from main claims or patch featurizer as separate engineering work |
 | Partner overfitting | Self-play results look stronger than they are | Include partner matrix and held-out seeds |
@@ -297,9 +325,9 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Build a broader scripted/BC dataset for `small_corridor` that covers onion pickup, pot placement, dish pickup, soup pickup, and delivery.
-2. Test whether full-chain BC or a subtask router can combine the v3 cooking behavior with the delivery BC skill.
-3. Use `router_onion_layouts_seed52_random0` as the main practical baseline for the report.
+1. Improve `small_corridor` beyond one scripted-BC soup by collecting multi-cycle and perturbed full-chain demonstrations.
+2. Test whether BC+PPO, BC-only replay, or a subtask router can produce repeatable `small_corridor` deliveries instead of one memorized chain.
+3. Report both router baselines: PPO-only four-layout router (`9.23` average, `5.80` min) and five-layout router with BC `small_corridor` (`7.58` average, `1.00` min).
 4. Start assembling the report tables and demo package from `docs/experiment_log.md` and the saved GIFs.
 5. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.
 

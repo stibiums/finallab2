@@ -231,6 +231,48 @@ bash scripts/train_curriculum.sh configs/small_corridor_delivery_warmstart_from_
   --timesteps 50000 \
   --eval-interval 25000 \
   --eval-episodes 20
+
+bash scripts/collect_delivery_demos.sh \
+  --config configs/baseline_small_corridor.json \
+  --mode full_chain \
+  --episodes 100 \
+  --max-steps 180 \
+  --output outputs/demos/small_corridor_full_chain_scripted.json
+
+bash scripts/train_delivery_bc.sh \
+  --config configs/baseline_small_corridor.json \
+  --init-run-dir outputs/runs/small_corridor_structured_shaping_v3 \
+  --demo-path outputs/demos/small_corridor_full_chain_scripted.json \
+  --run-name small_corridor_full_chain_bc_from_v3 \
+  --epochs 60 \
+  --batch-size 256 \
+  --learning-rate 0.001
+
+bash scripts/evaluate.sh outputs/runs/small_corridor_full_chain_bc_from_v3 \
+  --episodes 20 \
+  --horizon 400 \
+  --output-name eval_standard_start_h400
+
+bash scripts/trace_episode.sh outputs/runs/small_corridor_full_chain_bc_from_v3 \
+  --horizon 400 \
+  --output-name standard_start_h400_trace \
+  --max-steps 400
+
+bash scripts/train_curriculum.sh configs/baseline_small_corridor.json \
+  --run-name small_corridor_full_chain_bc_ppo_finetune \
+  --init-run-dir outputs/runs/small_corridor_full_chain_bc_from_v3 \
+  --timesteps 50000 \
+  --eval-interval 25000 \
+  --eval-episodes 20
+
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route simple=outputs/runs/curriculum_simple_random0 \
+  --route random0=outputs/runs/baseline_random0_long_seed52 \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --route small_corridor=outputs/runs/small_corridor_full_chain_bc_from_v3 \
+  --output-dir outputs/runs/router_onion_layouts_with_small_corridor_bc \
+  --output-name router_eval
 ```
 
 ## Run Summary
@@ -258,12 +300,15 @@ bash scripts/train_curriculum.sh configs/small_corridor_delivery_warmstart_from_
 | `small_corridor_delivery_warmstart_from_v3` | 65 | 100000 | 46.51 | 0.00 | 0.0 | 73.76 | - |
 | `small_corridor_delivery_bc_from_v3` | 65 | BC 40 epochs | - | 1.00 warm-start / 0.00 standard | 20.0 / 0.0 | 20.99 / 0.00 | - |
 | `small_corridor_delivery_bc_ppo_finetune` | 65 | 50000 | 22.53 | 1.00 warm-start / 0.00 standard | 20.0 / 0.0 | 20.99 / 0.00 | - |
+| `small_corridor_full_chain_bc_from_v3` | 60 | BC 60 epochs | - | 1.00 standard | 20.0 | 34.00 | 1.0 |
+| `small_corridor_full_chain_bc_ppo_finetune` | 60 | 50000 | 26.46 | 1.00 best / 0.90 final | 20.0 / 18.0 | 34.00 / 31.50 | - |
 | `baseline_random1` | 70 | 300000 | 116.94 | 5.80 | 116.0 | 225.10 | 6.0 |
 | `baseline_random1_seed71` | 71 | 300000 | 116.99 | 5.20 | 104.0 | 202.80 | - |
 | `baseline_unident_s` | 80 | 300000 | 118.35 | 12.70 | 254.0 | 481.25 | 13.0 |
 | `baseline_unident_s_seed81` | 81 | 300000 | 118.88 | 12.60 | 252.0 | 470.30 | - |
 | `router_onion_layouts` | - | 0 | - | 9.55 / 6.30 / 5.80 / 12.70 | 191.0 / 126.0 / 116.0 / 254.0 | 360.40 / 244.45 / 225.10 / 481.25 | - |
 | `router_onion_layouts_seed52_random0` | - | 0 | - | 9.55 / 8.85 / 5.80 / 12.70 | 191.0 / 177.0 / 116.0 / 254.0 | 360.40 / 339.45 / 225.10 / 481.25 | - |
+| `router_onion_layouts_with_small_corridor_bc` | - | 0 | - | 9.55 / 8.85 / 1.00 / 5.80 / 12.70 | 191.0 / 177.0 / 20.0 / 116.0 / 254.0 | 360.40 / 339.45 / 34.00 / 225.10 / 481.25 | - |
 
 ## Step 1: Reward-Shaping Ablation
 
@@ -683,6 +728,53 @@ Trace diagnosis:
 
 Conclusion: behavior cloning is effective for the exact demonstrated delivery subtask, and it proves that supervised subtask pretraining can put a useful skill into the PPO policy. However, narrow delivery-only BC overwrites or fails to activate the earlier cooking behavior from standard start. The next small-corridor attempt should train on a broader scripted subtask mixture: onion pickup, pot placement, dish pickup, soup pickup, and delivery, or use a hierarchical/subtask router that calls the delivery policy only after soup pickup.
 
+## Step 15: Full-Chain Small Corridor Behavior Cloning
+
+This step follows the Step 14 conclusion by collecting a full standard-start `small_corridor` trajectory rather than only the final delivery segment. The scripted plan assigns agent 0 to collect three onions and place them into the pot, while agent 1 gets a dish, waits for cooking, picks up soup, walks to the left serving station, turns south, and serves.
+
+Scripted full-chain demos:
+
+| Artifact | Episodes | Successes | Success rate | Mean success steps | Meaning |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `outputs/demos/small_corridor_full_chain_scripted.json` | 100 | 100 | 1.00 | 122.0 | One full standard-start soup chain is mechanically feasible and can be demonstrated reliably. |
+
+BC setup:
+
+| Run | Init run | Demo file | Epochs | Dataset steps | Ego val acc | Alt val acc |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| `small_corridor_full_chain_bc_from_v3` | `small_corridor_structured_shaping_v3` | `outputs/demos/small_corridor_full_chain_scripted.json` | 60 | 12200 | 1.00 | 0.9873 |
+
+Standard-start evaluation:
+
+| Run | Horizon | Mean soups | Mean sparse reward | Mean episode reward | Interpretation |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `small_corridor_full_chain_bc_from_v3` | 400 | 1.00 | 20.0 | 34.00 | Full-chain BC solves the first standard-start soup. |
+| `small_corridor_full_chain_bc_ppo_finetune` best | 400 | 1.00 | 20.0 | 34.00 | The best checkpoint remains the initial BC policy. |
+| `small_corridor_full_chain_bc_ppo_finetune` final | 400 | 0.90 | 18.0 | 31.50 | PPO fine-tuning slightly degrades the deterministic policy by 50k steps. |
+
+Trace and demo:
+
+| Artifact | Result |
+| --- | --- |
+| `outputs/runs/small_corridor_full_chain_bc_from_v3/traces/standard_start_h400_trace.json` | 1.00 soup, sparse reward 20.0, shaped reward 14.0, first sparse reward at step 122. |
+| `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/traces/standard_start_h400_trace.json` | Same best-checkpoint behavior: 1.00 soup and sparse reward 20.0. |
+| `outputs/runs/small_corridor_full_chain_bc_from_v3/demo/small_corridor_full_chain_bc_demo.gif` | Qualitative demo for the first standard-start soup chain. |
+
+Router impact:
+
+| Layout | Selected run | Mean soups | Mean sparse reward | Mean episode reward | Status |
+| --- | --- | ---: | ---: | ---: | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | 191.0 | 360.40 | ok |
+| `random0` | `baseline_random0_long_seed52` | 8.85 | 177.0 | 339.45 | ok |
+| `small_corridor` | `small_corridor_full_chain_bc_from_v3` | 1.00 | 20.0 | 34.00 | ok |
+| `random1` | `baseline_random1` | 5.80 | 116.0 | 225.10 | ok |
+| `unident_s` | `baseline_unident_s` | 12.70 | 254.0 | 481.25 | ok |
+| `simple_tomato` | - | - | - | - | skipped `NoRoute` |
+
+The five-onion-layout average is 7.58 soups and the minimum is 1.00 soup. This is the broadest current coverage result, but it mixes PPO specialists with one scripted-BC specialist. The PPO-only router remains the cleaner pure-RL comparison over four routed onion layouts: 9.23 average soups and 5.80 minimum soups, with `small_corridor` skipped.
+
+Conclusion: full-chain BC changes `small_corridor` from a zero-sparse failure into a one-soup standard-start specialist. The important limitation is that this is imitation of one complete chain, not autonomous discovery of a repeatable cooking loop. PPO fine-tuning did not improve it at 50k steps, so the next optimization should either collect multi-cycle and perturbed full-chain demos, or treat this as a hierarchical/specialist component rather than pretending it is a pure PPO solution.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -715,7 +807,12 @@ Conclusion: behavior cloning is effective for the exact demonstrated delivery su
 28. Scripted delivery demos solve the isolated final delivery subtask with 100/100 success and provide the first clean data source for behavior cloning.
 29. Delivery behavior cloning reaches 1.00 soups on the isolated `small_corridor_delivery` start state.
 30. Delivery-only BC does not solve standard `small_corridor`; from the standard start the BC policy chooses `stay` for the whole 400-step trace.
-31. The next useful BC dataset must cover the full cooking chain or be used through an explicit subtask/hierarchical controller, not as a narrow replacement for the whole policy.
+31. Delivery-only BC does not solve the full task; it must be broadened to the whole cooking chain or used through an explicit subtask/hierarchical controller.
+32. Full-chain scripted demos solve one standard-start `small_corridor` soup with 100/100 success and mean 122 steps.
+33. Full-chain BC reaches 1.00 standard-start soup on `small_corridor`, where all PPO-only specialists still get 0.00.
+34. PPO fine-tuning from full-chain BC does not improve the policy at 50k steps; the best checkpoint remains the initial BC policy, while the final checkpoint drops to 0.90 soups.
+35. Adding the full-chain BC specialist to the router gives nonzero coverage on all five onion layouts, with 7.58 average soups and 1.00 minimum soup.
+36. The new `small_corridor` result should be framed as scripted imitation / specialist rescue, not as evidence that PPO alone solved the layout.
 
 ## Artifacts
 
@@ -781,6 +878,16 @@ Conclusion: behavior cloning is effective for the exact demonstrated delivery su
   - `outputs/runs/small_corridor_delivery_bc_ppo_finetune/metrics/curriculum_eval.csv`
   - `outputs/runs/small_corridor_delivery_bc_ppo_finetune/metrics/eval_standard_start_h400.json`
   - `outputs/runs/small_corridor_delivery_bc_ppo_finetune/traces/standard_start_h400_trace.json`
+- Full-chain `small_corridor` BC artifacts:
+  - `outputs/demos/small_corridor_full_chain_scripted.json`
+  - `outputs/runs/small_corridor_full_chain_bc_from_v3/metrics/bc_summary.json`
+  - `outputs/runs/small_corridor_full_chain_bc_from_v3/metrics/eval_standard_start_h400.json`
+  - `outputs/runs/small_corridor_full_chain_bc_from_v3/traces/standard_start_h400_trace.json`
+  - `outputs/runs/small_corridor_full_chain_bc_from_v3/demo/small_corridor_full_chain_bc_demo.gif`
+  - `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/metrics/curriculum_eval.csv`
+  - `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/metrics/train_summary.json`
+  - `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/metrics/eval_standard_start_h400.json`
+  - `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/traces/standard_start_h400_trace.json`
 - Phase 2 specialist runs:
   - `outputs/runs/baseline_small_corridor/metrics/eval_metrics.json`
   - `outputs/runs/baseline_small_corridor/metrics/zero_shot_layouts.csv`
@@ -806,6 +913,10 @@ Conclusion: behavior cloning is effective for the exact demonstrated delivery su
   - `outputs/runs/router_onion_layouts_seed52_random0/router_config.resolved.json`
   - `outputs/runs/router_onion_layouts_seed52_random0/metrics/router_eval.csv`
   - `outputs/runs/router_onion_layouts_seed52_random0/metrics/router_eval.json`
+- Onion-router run with full-chain `small_corridor` BC:
+  - `outputs/runs/router_onion_layouts_with_small_corridor_bc/router_config.resolved.json`
+  - `outputs/runs/router_onion_layouts_with_small_corridor_bc/metrics/router_eval.csv`
+  - `outputs/runs/router_onion_layouts_with_small_corridor_bc/metrics/router_eval.json`
 - Demos:
   - `outputs/runs/baseline_simple/demo/demo.gif`
   - `outputs/runs/no_shaping_simple/demo/demo.gif`
@@ -818,6 +929,7 @@ Conclusion: behavior cloning is effective for the exact demonstrated delivery su
   - `outputs/runs/baseline_random0/demo/random0_demo.gif`
   - `outputs/runs/baseline_random0/demo/simple_transfer_demo.gif`
   - `outputs/runs/baseline_random0_long/demo/random0_long_demo.gif`
+  - `outputs/runs/small_corridor_full_chain_bc_from_v3/demo/small_corridor_full_chain_bc_demo.gif`
   - `outputs/runs/baseline_random1/demo/random1_demo.gif`
   - `outputs/runs/baseline_unident_s/demo/unident_s_demo.gif`
 - Episode traces:
@@ -829,9 +941,9 @@ Conclusion: behavior cloning is effective for the exact demonstrated delivery su
 
 The next project direction should move beyond naive multi-layout mixing:
 
-1. Focus `small_corridor`: inspect trajectories and try a more structured curriculum, scripted warm start, or stronger layout-specific shaping instead of merely adding more PPO budget.
+1. Improve `small_corridor` beyond one scripted-BC soup: collect multi-cycle and perturbed full-chain demos, then test whether BC or BC+PPO can deliver more than one soup.
 2. Add periodic checkpoint selection for specialist runs, because training reward can be non-monotonic and the final checkpoint is not guaranteed to be best.
 3. Try a policy-selection or layout-conditioned comparison only after using the improved router as the benchmark.
 4. Stronger partner-diversity: use held-out partners during training, not only during evaluation, especially for the brittle `random1` layout.
-5. Reward redesign: add or tune shaping around pot progress, dish pickup, and delivery so high shaped reward correlates with soups delivered.
+5. Distill or route specialists explicitly: compare PPO-only router, router with BC `small_corridor`, and any unified/layout-conditioned policy against the same layout set.
 6. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.
