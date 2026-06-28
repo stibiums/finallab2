@@ -1368,6 +1368,86 @@ Conclusion: the repository now has a reproducible demo-video draft path. The
 remaining course-facing choice is whether this GIF-based MP4 is acceptable, or
 whether to record a live screen-demo using `report/demo_script.md`.
 
+## Step 29: Larger `random1` Partner Population
+
+This step follows the project plan's remaining partner-robustness item: expand
+the `random1` partner population beyond the first two-partner diversity run and
+test whether this fixes held-out partner collapse.
+
+New configs:
+
+- `configs/baseline_random1_seed73.json`
+- `configs/partner_diversity_random1_three_partners.json`
+
+Commands:
+
+```bash
+bash scripts/train.sh configs/baseline_random1_seed73.json
+bash scripts/train_diverse.sh configs/partner_diversity_random1_three_partners.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --partner-run-dir outputs/runs/baseline_random1_seed73 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1_four_partners
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_random1 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --partner-run-dir outputs/runs/baseline_random1_seed73 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1_four_partners
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_random1_three_partners \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --partner-run-dir outputs/runs/baseline_random1_seed73 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1_four_partners
+```
+
+Training results:
+
+| Run | Seed | Timesteps | Train seconds | Deterministic self-play soups |
+| --- | ---: | ---: | ---: | ---: |
+| `baseline_random1_seed73` | 73 | 300000 | 117.01 | 0.90 |
+| `partner_diversity_random1_three_partners` | 73 | 300000 | 106.36 | not self-play; trained against three fixed partners |
+
+Four-partner compatibility matrix, reported as mean soups delivered:
+
+| Ego run | `baseline_random1` partner | `baseline_random1_seed71` partner | `baseline_random1_seed72` partner | `baseline_random1_seed73` partner | Average | Minimum |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `baseline_random1` | 5.80 | 0.25 | 0.65 | 1.10 | 1.95 | 0.25 |
+| `partner_diversity_random1` | 2.25 | 4.55 | 0.45 | 1.10 | 2.09 | 0.45 |
+| `partner_diversity_random1_three_partners` | 4.90 | 1.40 | 0.65 | 1.00 | 1.99 | 0.65 |
+| `baseline_random1_seed73` | 1.65 | 0.00 | 0.55 | 0.90 | 0.78 | 0.00 |
+
+Interpretation:
+
+- The three-partner run improves the minimum over its three seen partners from
+  0.45 to 0.65 soups, so population training is not useless.
+- It does not improve the held-out seed73 result over the two-partner run:
+  1.00 soups versus 1.10 soups.
+- Its four-partner average is 1.99, slightly below the two-partner run's 2.09.
+- Therefore, simply adding one more fixed partner is not enough to solve
+  `random1` held-out robustness. A more systematic population method, partner
+  conditioning, or online co-play/self-play population training would be needed
+  for a stronger robustness claim.
+
+Artifacts:
+
+- `outputs/runs/baseline_random1_seed73/metrics/train_summary.json`
+- `outputs/runs/baseline_random1_seed73/metrics/eval_metrics.json`
+- `outputs/runs/baseline_random1_seed73/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_diversity_random1_three_partners/metrics/train_summary.json`
+- `outputs/runs/partner_diversity_random1_three_partners/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_diversity_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/baseline_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1375,8 +1455,9 @@ The next project direction should move beyond naive multi-layout mixing:
 1. Final submission packaging: add real identity metadata if required, record
    the demo video or use the generated draft if acceptable, and run
    `scripts/package_submission.py` with the real `学号+姓名` archive stem.
-2. Stronger partner-diversity: expand the `random1` partner population beyond
-   two training partners before expecting held-out robustness.
+2. Stronger partner-diversity: the 3-partner fixed-pool run is completed but
+   still does not solve held-out robustness; future work should use a larger or
+   more structured population method rather than just adding one fixed partner.
 3. If time remains, test role-balanced `small_corridor` demos or a subtask
    router as an extension beyond the solved 3-soup specialist.
 4. Tomato support decision: either avoid tomato maps in this environment stack

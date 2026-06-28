@@ -265,6 +265,7 @@ Train held-out hard-layout partner seeds:
 ```bash
 bash scripts/train.sh configs/baseline_random0_long_seed52.json
 bash scripts/train.sh configs/baseline_random1_seed71.json
+bash scripts/train.sh configs/baseline_random1_seed73.json
 bash scripts/train.sh configs/baseline_unident_s_seed81.json
 ```
 
@@ -433,6 +434,8 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | random1 held-out seed72 | `configs/baseline_random1_seed72.json` | Add a third `random1` partner for held-out compatibility testing |
 | random1 partner diversity | `configs/partner_diversity_random1.json` | Train one `random1` ego against two fixed partners; improves in-pool compatibility but remains weak on held-out seed72 |
+| random1 held-out seed73 | `configs/baseline_random1_seed73.json` | Add a fourth `random1` partner; self-play remains weak and cross-play stays brittle |
+| random1 three-partner diversity | `configs/partner_diversity_random1_three_partners.json` | Train one `random1` ego against three fixed partners; improves the seen-partner minimum but does not solve held-out seed73 |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |
 | unident_s held-out seed | `configs/baseline_unident_s_seed81.json` | Test whether `unident_s` is robust across independently trained partners |
 | simple+random0 router | `configs/router_simple_random0.json` | Compose map specialists and measure routed coverage |

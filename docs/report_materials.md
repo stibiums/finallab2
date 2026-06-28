@@ -83,8 +83,9 @@ Report figure:
 | --- | ---: | ---: | --- |
 | `simple` baseline ego | 7.50 | 5.60 with seed11, 0.00 with seed12 | Partner overfitting is already visible on the easy map. |
 | `random0` long specialists | 6.30 to 8.85 | 1.65 to 7.70 | Asymmetric compatibility. |
-| `random1` specialists | 5.20 to 5.80 | 0.00 to 0.25 | Strong self-play, brittle cross-play. |
-| `partner_diversity_random1` | 2.25 to 4.55 with training partners | 0.45 with held-out seed72 | Improves in-pool compatibility but does not solve held-out robustness. |
+| `random1` specialists | 5.20 to 5.80 | 0.00 to 1.10 across held-out partners | Strong self-play, brittle cross-play. |
+| `partner_diversity_random1` | 2.25 to 4.55 with two training partners | 0.45 with held-out seed72, 1.10 with held-out seed73 | Improves in-pool compatibility but does not solve held-out robustness. |
+| `partner_diversity_random1_three_partners` | 0.65 to 4.90 with three training partners | 1.00 with held-out seed73 | Raises the seen-partner minimum but does not beat the two-partner run on four-partner average. |
 | `unident_s` specialists | 12.60 to 12.70 | 12.60 to 12.65 | Robust across tested seeds. |
 
 Evidence:
@@ -98,6 +99,9 @@ Evidence:
 - `outputs/runs/baseline_random1_seed71/metrics/partner_matrix_hard_random1_three_partners.csv`
 - `outputs/runs/baseline_random1_seed72/metrics/partner_matrix_hard_random1_three_partners.csv`
 - `outputs/runs/partner_diversity_random1/metrics/partner_matrix_hard_random1_three_partners.csv`
+- `outputs/runs/baseline_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_diversity_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_diversity_random1_three_partners/metrics/partner_matrix_hard_random1_four_partners.csv`
 - `outputs/runs/baseline_unident_s/metrics/partner_matrix_hard_unident_s.csv`
 - `outputs/runs/baseline_unident_s_seed81/metrics/partner_matrix_hard_unident_s.csv`
 

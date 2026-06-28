@@ -38,10 +38,12 @@ SELECTED_RUNS = [
     "baseline_random0_long",
     "baseline_random0_long_seed52",
     "baseline_random1",
+    "baseline_random1_seed73",
     "baseline_unident_s",
     "small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune",
     "router_onion_layouts_with_small_corridor_jitter3_bc_ppo",
     "partner_diversity_random1",
+    "partner_diversity_random1_three_partners",
 ]
 
 IGNORE_NAMES = {

@@ -71,6 +71,7 @@ failure.
 | Best `small_corridor` specialist | `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` |
 | Best five-layout router metrics | `outputs/runs/router_onion_layouts_with_small_corridor_jitter3_bc_ppo` |
 | Partner robustness diagnostic | `outputs/runs/partner_diversity_random1` |
+| Larger `random1` partner-population diagnostic | `outputs/runs/baseline_random1_seed73`, `outputs/runs/partner_diversity_random1_three_partners` |
 
 ## Demo Assets
 
@@ -191,6 +192,11 @@ The compact test archive wrote successfully to
 code, model, demo, and router-metric paths checked after creation.
 After the demo-video draft was generated, the test archive was rebuilt and
 confirmed to include `submission_dry_run/report/demo_video_draft.mp4`.
+After the larger `random1` partner-population diagnostic was added, the test
+archive was rebuilt again with 21 package items and size 9.2 MB. The rebuilt
+archive contains `baseline_random1_seed73` and
+`partner_diversity_random1_three_partners` train summaries and four-partner
+matrix metrics.
 
 The generated demo-video draft wrote successfully to
 `report/demo_video_draft.mp4`; `ffprobe` reported duration `437.162760`
