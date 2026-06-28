@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>基于 Specialist Router 的 Overcooked 双智能体协作策略研究</title>
+  <style>
+:root {
+  color-scheme: light;
+  --fg: #172033;
+  --muted: #536071;
+  --line: #d8dee8;
+  --soft: #f5f7fb;
+  --accent: #2563eb;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #eef2f7;
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC",
+    "Microsoft YaHei", Arial, sans-serif;
+  line-height: 1.64;
+}
+main {
+  width: min(980px, calc(100% - 40px));
+  margin: 32px auto;
+  padding: 56px 64px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+h1, h2, h3 {
+  line-height: 1.25;
+  margin: 1.65em 0 .65em;
+}
+h1 { margin-top: 0; font-size: 30px; text-align: center; }
+h2 {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  font-size: 23px;
+}
+h3 { font-size: 18px; }
+p, ul, ol, table, pre { margin: 0 0 1em; }
+ul, ol { padding-left: 1.5em; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--soft);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: .92em;
+}
+pre {
+  padding: 14px 16px;
+  overflow-x: auto;
+  background: #111827;
+  color: #f9fafb;
+  border-radius: 6px;
+}
+pre code { padding: 0; background: transparent; color: inherit; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  vertical-align: top;
+}
+th { background: var(--soft); font-weight: 700; }
+blockquote {
+  margin: 1em 0;
+  padding: 12px 16px;
+  border-left: 4px solid var(--accent);
+  background: var(--soft);
+  color: var(--muted);
+}
+img {
+  display: block;
+  max-width: 100%;
+  margin: 18px auto 26px;
+  border: 1px solid var(--line);
+}
+.meta {
+  color: var(--muted);
+  text-align: center;
+  margin-top: -10px;
+}
+@page { margin: 18mm 16mm; }
+@media print {
+  body { background: #fff; }
+  main { width: 100%; margin: 0; padding: 0; border: 0; }
+  h2 { break-after: avoid; }
+  table, img, pre { break-inside: avoid; }
+  a { color: inherit; }
+}
+</style>
+</head>
+<body>
+  <main>
+<h1>基于 Specialist Router 的 Overcooked 双智能体协作策略研究</h1>
+<p>更新时间：2026-06-28</p>
+<h2>摘要</h2>
+<p>本项目研究两个智能体在 Overcooked 环境中的协作学习问题。我们以 Stable-Baselines3 PPO 为基础算法，通过 PantheonRL simultaneous-agent wrapper 同时训练两个智能体，并以每局交付汤数作为主要评价指标。实验表明，默认 reward shaping 可以让 PPO 在简单地图 <code>simple</code> 上学习到有效协作策略；但纯 sparse reward、zero-shot 跨地图迁移、朴素多地图混训都无法形成可靠的跨地图能力。</p>
+<p>在后续阶段，我们转向 single-layout specialist 和 layout router。每张地图训练独立专家，再由 router 按 layout name 选择对应策略。该方法在 <code>simple</code>、<code>random0</code>、<code>random1</code>、<code>unident_s</code> 上获得稳定非零结果。对于最困难的 <code>small_corridor</code>，PPO 从零训练和多种 reward shaping 均失败；通过 scripted full-chain behavior cloning、multi-cycle demonstrations、wait-perturbed demonstrations 以及 checkpoint-selected PPO fine-tuning，最终将该地图提升到 3.00 soups。最终最强 router 在五个 onion layouts 上达到平均 7.98 soups，最低 3.00 soups。</p>
+<p>核心结论是：在当前环境栈和训练预算下，最有效的方案不是期待单一 PPO 策略自然泛化到所有地图，而是把跨地图能力建模为 specialist composition / policy selection 问题。同时，partner robustness 和 checkpoint selection 是必须显式评估的关键风险。</p>
+<h2>1. 问题设置</h2>
+<p>Overcooked 是一个完全合作式多智能体任务。两个智能体需要在有限步数内分工完成拿洋葱、放锅、等待烹饪、拿盘、取汤、上菜等子任务。每成功交付一份汤得到 sparse reward 20，因此本文使用：</p>
+<pre><code>soups delivered = sparse reward / 20</code></pre>
+<p>作为主指标。默认评估设置为 20 个 deterministic episodes，每局 horizon 为 400 steps。</p>
+<p>本文关注七个问题：</p>
+<ol>
+<li>PPO baseline 能否在简单地图上学会合作。</li>
+<li>Reward shaping 对学习是否必要。</li>
+<li>单地图策略能否 zero-shot 泛化到其他地图。</li>
+<li>朴素多地图混训能否解决泛化问题。</li>
+<li>Specialist + router 能否形成更强的实用方案。</li>
+<li><code>small_corridor</code> 这类困难地图是否能通过 imitation / curriculum 解决。</li>
+<li>自博弈成功是否意味着对不同 partner 鲁棒。</li>
+</ol>
+<h2>2. 方法</h2>
+<h3>2.1 PPO Baseline</h3>
+<p>基础算法为 PPO。每个 layout 中训练 ego 和 partner 两个策略，评估时使用 deterministic action。主要脚本如下：</p>
+<ul>
+<li><code>scripts/train.sh</code></li>
+<li><code>scripts/evaluate.sh</code></li>
+<li><code>scripts/evaluate_matrix.sh</code></li>
+<li><code>scripts/record_demo.sh</code></li>
+</ul>
+<p>主要 baseline 配置为 <code>configs/baseline_simple.json</code>。</p>
+<h3>2.2 Reward Shaping 消融</h3>
+<p>我们比较三种简单地图设置：</p>
+<table>
+<thead><tr><th>Run</th><th>设置</th><th>目的</th></tr></thead>
+<tbody>
+<tr><td><code>no_shaping_simple</code></td><td>关闭 shaping</td><td>检验 sparse-only 学习难度</td></tr>
+<tr><td><code>baseline_simple</code></td><td>默认 shaping</td><td>建立可靠 PPO baseline</td></tr>
+<tr><td><code>distance_shaping_simple</code></td><td>默认 shaping + distance reward</td><td>检验额外距离奖励是否有帮助</td></tr>
+</tbody></table>
+<h3>2.3 Specialist 与 Router</h3>
+<p>Zero-shot 和朴素多地图训练失败后，我们将跨地图问题改写为 specialist composition：每张目标地图训练一个 specialist，再由 router 按 layout 选择 run。</p>
+<p>Router 相关代码：</p>
+<ul>
+<li><code>src/overcooked_project/evaluate_router.py</code></li>
+<li><code>scripts/evaluate_router.sh</code></li>
+<li><code>configs/router_simple_random0.json</code></li>
+</ul>
+<p>该方案不声称单个神经策略具备跨地图泛化能力，而是衡量“专家组合”在当前项目预算下能达到的实用上界。</p>
+<h3>2.4 Behavior Cloning 与 Small Corridor Curriculum</h3>
+<p><code>small_corridor</code> 是项目中最困难的 onion layout。PPO 从零训练、多种结构化 shaping、delivery warm-start PPO 都无法从标准开局完成上菜。因此我们逐步引入监督轨迹：</p>
+<ol>
+<li>Delivery demos：只学习最后送汤段。</li>
+<li>Full-chain demos：从标准开局完成一份汤。</li>
+<li>3-cycle full-chain demos：连续完成三份汤。</li>
+<li>Wait-jittered 3-cycle demos：在安全同步点加入随机等待扰动。</li>
+<li>从 perturbed BC 初始化 PPO，并选择 25k best checkpoint。</li>
+</ol>
+<p>关键脚本：</p>
+<ul>
+<li><code>scripts/collect_delivery_demos.sh</code></li>
+<li><code>scripts/train_delivery_bc.sh</code></li>
+<li><code>scripts/train_curriculum.sh</code></li>
+</ul>
+<h2>3. 实验结果</h2>
+<h3>3.1 PPO Baseline 与 Reward Shaping</h3>
+<table>
+<thead><tr><th>Run</th><th>Layout</th><th>Mean soups</th><th>Mean sparse reward</th><th>结论</th></tr></thead>
+<tbody>
+<tr><td><code>no_shaping_simple</code></td><td><code>simple</code></td><td>0.00</td><td>0.0</td><td>Sparse-only 在当前预算下失败。</td></tr>
+<tr><td><code>baseline_simple</code></td><td><code>simple</code></td><td>7.50</td><td>150.0</td><td>默认 shaping 能学到可用协作。</td></tr>
+<tr><td><code>distance_shaping_simple</code></td><td><code>simple</code></td><td>7.50</td><td>150.0</td><td>测试的 distance shaping 没有超过默认 shaping。</td></tr>
+</tbody></table>
+<p>结论：reward shaping 对 PPO 学习是必要的，但简单叠加距离奖励并不自动提升最终 sparse performance。</p>
+<h3>3.2 Zero-Shot 与 Multi-Layout 失败</h3>
+<p><code>baseline_simple</code> 在 <code>simple</code> 上可达到 7.50 soups，但迁移到 harder layouts 后基本没有 sparse reward。</p>
+<table>
+<thead><tr><th>Layout</th><th>Mean soups</th></tr></thead>
+<tbody>
+<tr><td><code>simple</code></td><td>7.50</td></tr>
+<tr><td><code>small_corridor</code></td><td>0.00</td></tr>
+<tr><td><code>random0</code></td><td>0.00</td></tr>
+<tr><td><code>random1</code></td><td>0.00</td></tr>
+<tr><td><code>unident_s</code></td><td>0.00 sparse</td></tr>
+</tbody></table>
+<p>朴素多地图 curriculum 也没有解决问题，甚至会损伤 <code>simple</code> 上的能力。这说明当前任务的跨地图泛化不能依赖简单训练分布混合。</p>
+<h3>3.3 Specialist 与 Router</h3>
+<p>单地图 specialist 可以解决多个困难地图：</p>
+<table>
+<thead><tr><th>Specialist</th><th>Layout</th><th>Mean soups</th><th>Mean sparse reward</th></tr></thead>
+<tbody>
+<tr><td><code>curriculum_simple_random0</code></td><td><code>simple</code></td><td>9.55</td><td>191.0</td></tr>
+<tr><td><code>baseline_random0_long_seed52</code></td><td><code>random0</code></td><td>8.85</td><td>177.0</td></tr>
+<tr><td><code>baseline_random1</code></td><td><code>random1</code></td><td>5.80</td><td>116.0</td></tr>
+<tr><td><code>baseline_unident_s</code></td><td><code>unident_s</code></td><td>12.70</td><td>254.0</td></tr>
+</tbody></table>
+<p><img src="../docs/assets/router_comparison.svg" alt="Router comparison"></p>
+<p>三组 router 对比如下：</p>
+<table>
+<thead><tr><th>Router</th><th><code>simple</code></th><th><code>random0</code></th><th><code>small_corridor</code></th><th><code>random1</code></th><th><code>unident_s</code></th><th>Average</th><th>Minimum</th></tr></thead>
+<tbody>
+<tr><td>PPO-only onion router</td><td>9.55</td><td>8.85</td><td>skipped</td><td>5.80</td><td>12.70</td><td>9.23</td><td>5.80</td></tr>
+<tr><td>With 3-cycle BC <code>small_corridor</code></td><td>9.55</td><td>8.85</td><td>1.90</td><td>5.80</td><td>12.70</td><td>7.76</td><td>1.90</td></tr>
+<tr><td>With perturbed BC+PPO <code>small_corridor</code></td><td>9.55</td><td>8.85</td><td>3.00</td><td>5.80</td><td>12.70</td><td>7.98</td><td>3.00</td></tr>
+</tbody></table>
+<p>当前最强结果是 checkpoint-selected perturbed BC+PPO <code>small_corridor</code> specialist 加入后的五地图 router，平均 7.98 soups，最低 3.00 soups。</p>
+<h3>3.4 Small Corridor Case Study</h3>
+<p><img src="../docs/assets/small_corridor_progression.svg" alt="Small corridor progression"></p>
+<p><code>small_corridor</code> 的优化过程如下：</p>
+<table>
+<thead><tr><th>Run</th><th>Mean soups</th><th>Mean sparse reward</th><th>解释</th></tr></thead>
+<tbody>
+<tr><td><code>baseline_small_corridor</code></td><td>0.00</td><td>0.0</td><td>PPO 从零失败。</td></tr>
+<tr><td><code>small_corridor_structured_shaping_v3</code></td><td>0.00</td><td>0.0</td><td>能到 soup pickup，但不能上菜。</td></tr>
+<tr><td><code>small_corridor_delivery_bc_from_v3</code> standard start</td><td>0.00</td><td>0.0</td><td>Delivery-only BC 太窄。</td></tr>
+<tr><td><code>small_corridor_full_chain_bc_from_v3</code></td><td>1.00</td><td>20.0</td><td>一份汤 full-chain BC 成功。</td></tr>
+<tr><td><code>small_corridor_full_chain_3cycle_bc_from_v3</code></td><td>1.90</td><td>38.0</td><td>多轮 BC 有提升但不稳定。</td></tr>
+<tr><td><code>small_corridor_full_chain_3cycle_jitter3_bc_from_v3</code></td><td>2.50</td><td>50.0</td><td>等待扰动提升鲁棒性。</td></tr>
+<tr><td><code>small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune</code> best at 25k</td><td>3.00</td><td>60.0</td><td>20/20 局达到 3 soups。</td></tr>
+<tr><td><code>small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune</code> final 50k</td><td>0.85</td><td>17.0</td><td>过训练后崩溃。</td></tr>
+</tbody></table>
+<p>这说明 <code>small_corridor</code> 的难点不只是 reward coefficient 不合适，而是长时序探索和多子任务衔接困难。Scripted demonstrations 提供了可学习的动作链，wait jitter 让 BC 不再只记住精确时钟。PPO fine-tuning 在 25k checkpoint 进一步稳定策略，但 50k final 崩溃，说明 checkpoint selection 是必要的。</p>
+<h3>3.5 Partner Robustness</h3>
+<p><img src="../docs/assets/partner_robustness.svg" alt="Partner robustness"></p>
+<p>自博弈成功不代表 partner 泛化成功：</p>
+<table>
+<thead><tr><th>Layout / ego</th><th>Self-play soups</th><th>Held-out partner soups</th><th>解释</th></tr></thead>
+<tbody>
+<tr><td><code>simple</code> baseline ego</td><td>7.50</td><td>5.60 with seed11, 0.00 with seed12</td><td>简单地图也有 partner overfitting。</td></tr>
+<tr><td><code>random0</code> long specialists</td><td>6.30 to 8.85</td><td>1.65 to 7.70</td><td>跨 partner 不对称。</td></tr>
+<tr><td><code>random1</code> specialists</td><td>5.20 to 5.80</td><td>0.00 to 0.25</td><td>自博弈成功但跨 partner 崩溃。</td></tr>
+<tr><td><code>unident_s</code> specialists</td><td>12.60 to 12.70</td><td>12.60 to 12.65</td><td>两个 seed 间较鲁棒。</td></tr>
+</tbody></table>
+<p>因此，报告中不能只展示 self-play 分数。每个声称鲁棒的 specialist 都需要 cross-play 或 held-out partner 证据。</p>
+<h2>4. Demo 与 Artifact</h2>
+<p>推荐展示 GIF：</p>
+<table>
+<thead><tr><th>Demo</th><th>Path</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>Default PPO baseline</td><td><a href="../outputs/runs/baseline_simple/demo/demo.gif">demo.gif</a></td><td>展示 <code>simple</code> baseline 成功。</td></tr>
+<tr><td>Sparse reward failure</td><td><a href="../outputs/runs/no_shaping_simple/demo/demo.gif">demo.gif</a></td><td>展示 sparse-only 失败。</td></tr>
+<tr><td>Naive multi-layout failure</td><td><a href="../outputs/runs/multi_layout_curriculum/demo/simple_demo.gif">simple_demo.gif</a></td><td>展示朴素混训问题。</td></tr>
+<tr><td><code>random0</code> specialist</td><td><a href="../outputs/runs/baseline_random0_long/demo/random0_long_demo.gif">random0_long_demo.gif</a></td><td>展示 hard-layout specialist。</td></tr>
+<tr><td><code>random1</code> specialist</td><td><a href="../outputs/runs/baseline_random1/demo/random1_demo.gif">random1_demo.gif</a></td><td>展示另一张 hard layout。</td></tr>
+<tr><td><code>unident_s</code> specialist</td><td><a href="../outputs/runs/baseline_unident_s/demo/unident_s_demo.gif">unident_s_demo.gif</a></td><td>展示最强 specialist。</td></tr>
+<tr><td>Best <code>small_corridor</code> specialist</td><td><a href="../outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/demo/small_corridor_full_chain_3cycle_jitter3_bc_ppo_best_demo.gif">small_corridor_full_chain_3cycle_jitter3_bc_ppo_best_demo.gif</a></td><td>展示最终 <code>small_corridor</code> 成功。</td></tr>
+</tbody></table>
+<p>核心数据路径：</p>
+<ul>
+<li>完整实验日志：<code>docs/experiment_log.md</code></li>
+<li>报告材料：<code>docs/report_materials.md</code></li>
+<li>最强 router：<code>outputs/runs/router_onion_layouts_with_small_corridor_jitter3_bc_ppo/metrics/router_eval.csv</code></li>
+<li><code>small_corridor</code> best/final checkpoint：<code>outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/metrics/train_summary.json</code></li>
+<li>Partner matrix：<code>outputs/runs/*/metrics/partner_matrix*.csv</code></li>
+</ul>
+<h2>5. 局限性</h2>
+<ol>
+<li>当前最强方案是 specialist router，不是单一神经策略的跨地图泛化。</li>
+<li><code>small_corridor</code> 的成功依赖 scripted demonstrations 和 checkpoint selection，不能表述为 PPO 从零探索成功。</li>
+<li><code>random1</code> 在 held-out partner 下明显崩溃，说明 partner-aware training 仍是重要后续方向。</li>
+<li>Tomato layouts 当前因 <code>KeyError: &#x27;tomato&#x27;</code> 没有纳入主结果，应作为环境栈问题单独说明。</li>
+<li>PPO fine-tuning 可能非单调，最终 checkpoint 不一定代表最佳策略。</li>
+</ol>
+<h2>6. 结论</h2>
+<p>本项目展示了一条从基础 PPO baseline 到 specialist router 的完整 MARL 实验链条。默认 shaping 的 PPO 能在 <code>simple</code> 上学到合作，但 sparse-only、zero-shot 和朴素多地图训练都失败。通过训练单地图 specialist 并使用 layout router，我们在多个困难 onion layouts 上获得了稳定表现。对于最困难的 <code>small_corridor</code>，我们通过 full-chain BC、多轮 demonstrations、wait perturbation 和 checkpoint-selected PPO fine-tuning，最终达到 3.00 soups。</p>
+<p>因此，本项目的核心结论是：在当前 Overcooked 设置下，跨地图能力更适合通过 specialist composition 和 policy selection 实现；如果进一步追求统一策略或更强泛化，需要引入 layout-conditioned policy、distillation 或 partner-aware training。</p>
+<h2>7. 后续工作</h2>
+<ol>
+<li>最终提交前按课程模板补充课程、队伍、姓名和学号等元信息。</li>
+<li>做 <code>random1</code> partner-aware training，修复 held-out partner 崩溃。</li>
+<li>尝试 role-balanced <code>small_corridor</code> demos，减少对固定角色分工的依赖。</li>
+<li>尝试 distillation，把 router specialists 蒸馏成统一策略。</li>
+<li>单独修复 tomato layout 的 featurizer 问题。</li>
+</ol>
+  </main>
+</body>
+</html>

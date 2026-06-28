@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overcooked MARL Specialist Router Slides</title>
+  <style>
+:root {
+  color-scheme: light;
+  --fg: #111827;
+  --muted: #4b5563;
+  --line: #d1d5db;
+  --soft: #f8fafc;
+  --accent: #2563eb;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #111827;
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC",
+    "Microsoft YaHei", Arial, sans-serif;
+}
+.deck {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+}
+.slide {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 560px;
+  margin: 0 auto 28px;
+  padding: 56px 72px;
+  background: #fff;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.slide.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+h1 { margin: 0 0 28px; font-size: 44px; line-height: 1.15; }
+h2 { margin: 0 0 24px; font-size: 34px; line-height: 1.2; }
+p, li { font-size: 23px; line-height: 1.45; }
+ul, ol { padding-left: 1.35em; }
+li { margin: 10px 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 18px;
+}
+th, td {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  vertical-align: top;
+}
+th { background: var(--soft); }
+code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--soft);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: .9em;
+}
+blockquote {
+  margin: 28px 0;
+  padding: 18px 24px;
+  border-left: 5px solid var(--accent);
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 28px;
+}
+img {
+  display: block;
+  max-width: 100%;
+  max-height: 390px;
+  margin: 0 auto;
+}
+.slide-number {
+  position: absolute;
+  right: 28px;
+  bottom: 18px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+@page { size: 16in 9in; margin: 0; }
+@media print {
+  body { background: #fff; }
+  .deck { max-width: none; margin: 0; padding: 0; }
+  .slide {
+    width: 16in;
+    height: 9in;
+    min-height: 0;
+    margin: 0;
+    border: 0;
+    break-after: page;
+    page-break-after: always;
+  }
+}
+</style>
+</head>
+<body>
+  <main class="deck">
+<section class="slide cover">
+<h1>Overcooked 多智能体协作策略研究</h1>
+<p>PPO baseline → failure analysis → specialists → layout router</p>
+<div class="slide-number">1 / 14</div>
+</section>
+<section class="slide">
+<h1>任务设置</h1>
+<ul>
+<li>环境：Overcooked-AI + PantheonRL simultaneous-agent wrapper</li>
+<li>智能体：两个 PPO agents，同时学习合作</li>
+<li>每局 horizon：400 steps</li>
+<li>主指标：<code>soups delivered = sparse reward / 20</code></li>
+<li>目标：从 baseline 出发，构建能覆盖多张 onion layouts 的实用方案</li>
+</ul>
+<div class="slide-number">2 / 14</div>
+</section>
+<section class="slide">
+<h1>核心问题</h1>
+<ol>
+<li>PPO 能否在简单地图上学会合作？</li>
+<li>Reward shaping 是否必要？</li>
+<li>单地图策略能否 zero-shot 泛化？</li>
+<li>多地图混训是否足够？</li>
+<li>Specialist + router 能否更稳定？</li>
+<li><code>small_corridor</code> 这种长链条地图怎么处理？</li>
+<li>自博弈成功是否等于 partner 鲁棒？</li>
+</ol>
+<div class="slide-number">3 / 14</div>
+</section>
+<section class="slide">
+<h1>Baseline 结论</h1>
+<table>
+<thead><tr><th>Run</th><th>Layout</th><th>Mean soups</th><th>结论</th></tr></thead>
+<tbody>
+<tr><td><code>no_shaping_simple</code></td><td><code>simple</code></td><td>0.00</td><td>sparse-only 失败</td></tr>
+<tr><td><code>baseline_simple</code></td><td><code>simple</code></td><td>7.50</td><td>默认 shaping 有效</td></tr>
+<tr><td><code>distance_shaping_simple</code></td><td><code>simple</code></td><td>7.50</td><td>没超过默认 shaping</td></tr>
+</tbody></table>
+<p>结论：reward shaping 是必要条件，但简单加距离奖励不一定提升最终 sparse performance。</p>
+<div class="slide-number">4 / 14</div>
+</section>
+<section class="slide">
+<h1>泛化失败</h1>
+<ul>
+<li><code>baseline_simple</code> 在 <code>simple</code> 上达到 7.50 soups。</li>
+<li>迁移到 <code>small_corridor</code>、<code>random0</code>、<code>random1</code>、<code>unident_s</code> 后基本 0 sparse reward。</li>
+<li>朴素多地图 curriculum 也没有解决问题，甚至损伤 <code>simple</code> 能力。</li>
+</ul>
+<p>因此，当前阶段不把重点放在“单一 PPO policy 自然泛化”上。</p>
+<div class="slide-number">5 / 14</div>
+</section>
+<section class="slide">
+<h1>Specialist Router</h1>
+<p><img src="../docs/assets/router_comparison.svg" alt="Router comparison"></p>
+<div class="slide-number">6 / 14</div>
+</section>
+<section class="slide">
+<h1>Router 结果</h1>
+<table>
+<thead><tr><th>Router</th><th>Average</th><th>Minimum</th><th>解释</th></tr></thead>
+<tbody>
+<tr><td>PPO-only onion router</td><td>9.23</td><td>5.80</td><td>强，但跳过 <code>small_corridor</code></td></tr>
+<tr><td>With 3-cycle BC <code>small_corridor</code></td><td>7.76</td><td>1.90</td><td>五图覆盖，但 small corridor 较弱</td></tr>
+<tr><td>With perturbed BC+PPO <code>small_corridor</code></td><td>7.98</td><td>3.00</td><td>当前最强五图覆盖</td></tr>
+</tbody></table>
+<div class="slide-number">7 / 14</div>
+</section>
+<section class="slide">
+<h1>Small Corridor 难点</h1>
+<p><img src="../docs/assets/small_corridor_progression.svg" alt="Small corridor progression"></p>
+<div class="slide-number">8 / 14</div>
+</section>
+<section class="slide">
+<h1>Small Corridor 关键发现</h1>
+<ul>
+<li>PPO from scratch：0 soups</li>
+<li>Structured shaping：能推进到 soup pickup，但无法上菜</li>
+<li>Delivery-only BC：只会最后一段，标准开局仍失败</li>
+<li>Full-chain BC：从标准开局做到 1 soup</li>
+<li>3-cycle BC：平均 1.90 soups</li>
+<li>Wait-jittered BC：平均 2.50 soups</li>
+<li>Perturbed BC + PPO 25k checkpoint：稳定 3.00 soups</li>
+<li>PPO 50k final：退化到 0.85 soups</li>
+</ul>
+<p>结论：checkpoint selection 是必要的。</p>
+<div class="slide-number">9 / 14</div>
+</section>
+<section class="slide">
+<h1>Partner Robustness</h1>
+<p><img src="../docs/assets/partner_robustness.svg" alt="Partner robustness"></p>
+<div class="slide-number">10 / 14</div>
+</section>
+<section class="slide">
+<h1>Partner 结论</h1>
+<ul>
+<li>Self-play 分数不能代表真实鲁棒性。</li>
+<li><code>random1</code> self-play 有 5.80 soups，但 held-out partner 几乎归零。</li>
+<li><code>unident_s</code> 在测试 seed 间更稳定。</li>
+<li>报告中必须区分 self-play success 与 partner robustness。</li>
+</ul>
+<div class="slide-number">11 / 14</div>
+</section>
+<section class="slide">
+<h1>最终主张</h1>
+<ol>
+<li>PPO + default shaping 能解决 <code>simple</code>。</li>
+<li>Sparse-only、zero-shot、naive multi-layout 都失败。</li>
+<li>Single-layout specialists 能解决多个 hard layouts。</li>
+<li>Layout router 是当前最强 practical method。</li>
+<li><code>small_corridor</code> 需要 scripted BC、perturbation 和 checkpoint selection。</li>
+<li>后续重点是 partner-aware training 和统一策略蒸馏。</li>
+</ol>
+<div class="slide-number">12 / 14</div>
+</section>
+<section class="slide">
+<h1>Demo 顺序</h1>
+<ol>
+<li><code>baseline_simple/demo/demo.gif</code></li>
+<li><code>no_shaping_simple/demo/demo.gif</code></li>
+<li><code>multi_layout_curriculum/demo/simple_demo.gif</code></li>
+<li><code>baseline_random0_long/demo/random0_long_demo.gif</code></li>
+<li><code>baseline_random1/demo/random1_demo.gif</code></li>
+<li><code>baseline_unident_s/demo/unident_s_demo.gif</code></li>
+<li><code>small_corridor_full_chain_3cycle_jitter3_bc_ppo_best_demo.gif</code></li>
+</ol>
+<div class="slide-number">13 / 14</div>
+</section>
+<section class="slide">
+<h1>结论</h1>
+<p>当前项目最有说服力的结果不是“一个 PPO 策略泛化到所有地图”，而是：</p>
+<blockquote>baseline works on simple → sparse / zero-shot / multi-layout fail → specialists solve hard layouts → router composes specialists → small corridor needs BC + checkpoint selection</blockquote>
+<p>这条链条能诚实解释失败，也能给出清晰改进。</p>
+<div class="slide-number">14 / 14</div>
+</section>
+  </main>
+</body>
+</html>

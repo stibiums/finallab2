@@ -76,6 +76,10 @@ def text(x: float, y: float, value: str, size: int = 13, anchor: str = "start", 
     )
 
 
+def score_label(value: float) -> str:
+    return f"{value:.2f}"
+
+
 def title_block(title: str, subtitle: str, width: int) -> list[str]:
     return [
         text(width / 2, 34, title, size=22, anchor="middle", weight="700"),
@@ -139,7 +143,8 @@ def build_router_comparison() -> None:
                 f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w - 4:.1f}" height="{bar_h:.1f}" '
                 f'rx="2" fill="{color}"/>'
             )
-            parts.append(text(x + bar_w / 2 - 2, y - 6, f"{value:.2g}", size=10, anchor="middle"))
+            if layout == "small_corridor":
+                parts.append(text(x + bar_w / 2 - 2, y - 6, score_label(value), size=10, anchor="middle"))
 
     legend_y = height - 38
     legend_x = 190
@@ -219,7 +224,7 @@ def build_partner_robustness() -> None:
             x = center + offset - bar_w / 2
             y = top + chart_h - bar_h
             parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{bar_h:.1f}" fill="{color}" rx="3"/>')
-            parts.append(text(x + bar_w / 2, y + label_y_offset, f"{value:.2g}", size=10, anchor="middle"))
+            parts.append(text(x + bar_w / 2, y + label_y_offset, score_label(value), size=10, anchor="middle"))
 
     legend_y = height - 36
     parts.append(f'<rect x="280" y="{legend_y - 12}" width="14" height="14" fill="#3b82f6" rx="2"/>')

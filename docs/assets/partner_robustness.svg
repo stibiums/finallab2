@@ -18,24 +18,24 @@
 <text x="88.0" y="115.1" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="end" fill="#111827">12</text>
 <text x="190.0" y="372.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">simple</text>
 <rect x="158.0" y="196.9" width="32.0" height="143.1" fill="#3b82f6" rx="3"/>
-<text x="174.0" y="190.9" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">7.5</text>
+<text x="174.0" y="190.9" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">7.50</text>
 <rect x="190.0" y="340.0" width="32.0" height="0.0" fill="#ef4444" rx="3"/>
-<text x="206.0" y="334.0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">0</text>
+<text x="206.0" y="334.0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">0.00</text>
 <text x="370.0" y="372.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">random0</text>
 <rect x="338.0" y="171.2" width="32.0" height="168.8" fill="#3b82f6" rx="3"/>
-<text x="354.0" y="165.2" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">8.8</text>
+<text x="354.0" y="165.2" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">8.85</text>
 <rect x="370.0" y="308.5" width="32.0" height="31.5" fill="#ef4444" rx="3"/>
-<text x="386.0" y="302.5" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">1.6</text>
+<text x="386.0" y="302.5" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">1.65</text>
 <text x="550.0" y="372.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">random1</text>
 <rect x="518.0" y="229.4" width="32.0" height="110.6" fill="#3b82f6" rx="3"/>
-<text x="534.0" y="223.4" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">5.8</text>
+<text x="534.0" y="223.4" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">5.80</text>
 <rect x="550.0" y="340.0" width="32.0" height="0.0" fill="#ef4444" rx="3"/>
-<text x="566.0" y="334.0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">0</text>
+<text x="566.0" y="334.0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">0.00</text>
 <text x="730.0" y="372.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">unident_s</text>
 <rect x="698.0" y="97.7" width="32.0" height="242.3" fill="#3b82f6" rx="3"/>
-<text x="714.0" y="91.7" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">13</text>
+<text x="714.0" y="91.7" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">12.70</text>
 <rect x="730.0" y="99.6" width="32.0" height="240.4" fill="#ef4444" rx="3"/>
-<text x="746.0" y="93.6" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">13</text>
+<text x="746.0" y="93.6" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="middle" fill="#111827">12.60</text>
 <rect x="280" y="382" width="14" height="14" fill="#3b82f6" rx="2"/>
 <text x="302.0" y="394.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">Self-play</text>
 <rect x="410" y="382" width="14" height="14" fill="#ef4444" rx="2"/>

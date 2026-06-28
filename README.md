@@ -13,7 +13,7 @@
 - Report-facing tables and demo manifest: [docs/report_materials.md](docs/report_materials.md).
 - Draft report text: [docs/report_draft.md](docs/report_draft.md).
 - Report SVG assets: [docs/assets](docs/assets).
-- Final report and slides draft: [report](report).
+- Final report/slides drafts and exports: [report](report).
 
 ## Setup
 

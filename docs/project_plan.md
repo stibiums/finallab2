@@ -325,7 +325,7 @@ Decision rule:
 
 ## Phase 5: Report And Demo Package
 
-Status: report-facing materials started in `docs/report_materials.md`, a prose report draft exists in `docs/report_draft.md`, report SVG assets are available in `docs/assets/`, and final report/slides drafts exist under `report/`.
+Status: report-facing materials started in `docs/report_materials.md`, a prose report draft exists in `docs/report_draft.md`, report SVG assets are available in `docs/assets/`, and final report/slides drafts plus HTML/PDF exports exist under `report/`.
 
 Required report components:
 
@@ -350,6 +350,7 @@ Recommended figures/tables:
 | Report SVG figures | `docs/assets/router_comparison.svg`, `docs/assets/small_corridor_progression.svg`, `docs/assets/partner_robustness.svg` |
 | Final report draft | `report/final_report.md` |
 | Slides draft | `report/slides.md` |
+| Final report exports | `report/final_report.html`, `report/final_report.pdf`, `report/slides.html`, `report/slides.pdf` |
 | Reward shaping ablation table | `outputs/runs/*/metrics/eval_metrics.json` |
 | Cross-layout matrix | `outputs/runs/*/metrics/zero_shot_layouts.csv` |
 | Router coverage table | `outputs/runs/router_*/metrics/router_eval.csv` |
@@ -382,7 +383,7 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Polish/export `report/final_report.md` and `report/slides.md` into the final course submission format.
+1. Do final submission polish on `report/final_report.pdf` and `report/slides.pdf`: add course/team metadata if required by the teacher, and adjust wording to the final submission template if one is provided.
 2. Keep the three router baselines explicit in the final text: PPO-only four-layout router (`9.23` average, `5.80` min), five-layout router with 3-cycle BC `small_corridor` (`7.76` average, `1.90` min), and five-layout router with checkpoint-selected perturbed BC+PPO (`7.98` average, `3.00` min).
 3. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.
 4. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the now-successful 3-soup specialist.

@@ -202,7 +202,7 @@ Router 相关代码：
 
 ## 7. 后续工作
 
-1. 将本 Markdown 报告转成 PDF 或课程要求格式。
+1. 最终提交前按课程模板补充课程、队伍、姓名和学号等元信息。
 2. 做 `random1` partner-aware training，修复 held-out partner 崩溃。
 3. 尝试 role-balanced `small_corridor` demos，减少对固定角色分工的依赖。
 4. 尝试 distillation，把 router specialists 蒸馏成统一策略。
