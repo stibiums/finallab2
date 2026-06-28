@@ -325,7 +325,7 @@ Decision rule:
 
 ## Phase 5: Report And Demo Package
 
-Status: report-facing materials started in `docs/report_materials.md`, and a prose report draft now exists in `docs/report_draft.md`; slides remain to be assembled.
+Status: report-facing materials started in `docs/report_materials.md`, a prose report draft exists in `docs/report_draft.md`, and report SVG assets are available in `docs/assets/`; slides remain to be assembled.
 
 Required report components:
 
@@ -347,6 +347,7 @@ Recommended figures/tables:
 | Run summary table | `docs/experiment_log.md` |
 | Report-ready summary | `docs/report_materials.md` |
 | Prose report draft | `docs/report_draft.md` |
+| Report SVG figures | `docs/assets/router_comparison.svg`, `docs/assets/small_corridor_progression.svg`, `docs/assets/partner_robustness.svg` |
 | Reward shaping ablation table | `outputs/runs/*/metrics/eval_metrics.json` |
 | Cross-layout matrix | `outputs/runs/*/metrics/zero_shot_layouts.csv` |
 | Router coverage table | `outputs/runs/router_*/metrics/router_eval.csv` |
@@ -379,7 +380,7 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Refine the prose report draft in `docs/report_draft.md` and add final figures/GIF references.
+1. Assemble the final report/slides from `docs/report_draft.md`, `docs/report_materials.md`, and the SVG/GIF references now listed in the docs.
 2. Report three router baselines: PPO-only four-layout router (`9.23` average, `5.80` min), five-layout router with 3-cycle BC `small_corridor` (`7.76` average, `1.90` min), and five-layout router with checkpoint-selected perturbed BC+PPO (`7.98` average, `3.00` min).
 3. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.
 4. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the now-successful 3-soup specialist.

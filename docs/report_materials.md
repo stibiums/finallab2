@@ -50,6 +50,10 @@ Evidence:
 - `outputs/runs/router_onion_layouts_with_small_corridor_3cycle_bc/metrics/router_eval.csv`
 - `outputs/runs/router_onion_layouts_with_small_corridor_jitter3_bc_ppo/metrics/router_eval.csv`
 
+Report figure:
+
+![Router comparison](assets/router_comparison.svg)
+
 ## Small Corridor Progression
 
 | Run | Mean soups | Mean sparse reward | Meaning |
@@ -69,6 +73,10 @@ Evidence:
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/metrics/train_summary.json`
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/metrics/curriculum_eval.csv`
 
+Report figure:
+
+![Small corridor progression](assets/small_corridor_progression.svg)
+
 ## Partner Robustness Table
 
 | Layout / ego | Self-play soups | Held-out partner soups | Interpretation |
@@ -87,6 +95,10 @@ Evidence:
 - `outputs/runs/baseline_random1_seed71/metrics/partner_matrix_hard_random1.csv`
 - `outputs/runs/baseline_unident_s/metrics/partner_matrix_hard_unident_s.csv`
 - `outputs/runs/baseline_unident_s_seed81/metrics/partner_matrix_hard_unident_s.csv`
+
+Report figure:
+
+![Partner robustness](assets/partner_robustness.svg)
 
 ## Demo Package Manifest
 

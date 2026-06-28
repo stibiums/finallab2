@@ -12,6 +12,7 @@
 - Detailed execution plan: [docs/project_plan.md](docs/project_plan.md).
 - Report-facing tables and demo manifest: [docs/report_materials.md](docs/report_materials.md).
 - Draft report text: [docs/report_draft.md](docs/report_draft.md).
+- Report SVG assets: [docs/assets](docs/assets).
 
 ## Setup
 

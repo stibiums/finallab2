@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="500" viewBox="0 0 920 500">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="460.0" y="34.0" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle" fill="#111827">Small corridor progression</text>
+<text x="460.0" y="58.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle" fill="#111827">From PPO failure to checkpoint-selected 3-soup specialist</text>
+<line x1="240.0" y1="78" x2="240.0" y2="428" stroke="#e5e7eb"/>
+<text x="240.0" y="452.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">0</text>
+<line x1="448.3" y1="78" x2="448.3" y2="428" stroke="#e5e7eb"/>
+<text x="448.3" y="452.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">1</text>
+<line x1="656.7" y1="78" x2="656.7" y2="428" stroke="#e5e7eb"/>
+<text x="656.7" y="452.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">2</text>
+<line x1="865.0" y1="78" x2="865.0" y2="428" stroke="#e5e7eb"/>
+<text x="865.0" y="452.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">3</text>
+<text x="224.0" y="110.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#111827">PPO from scratch</text>
+<rect x="240" y="90" width="2.0" height="26" fill="#9ca3af" rx="3"/>
+<text x="250.0" y="108.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">0.00</text>
+<text x="224.0" y="158.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#111827">Structured shaping v3</text>
+<rect x="240" y="138" width="2.0" height="26" fill="#9ca3af" rx="3"/>
+<text x="250.0" y="156.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">0.00</text>
+<text x="224.0" y="206.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#111827">Full-chain BC</text>
+<rect x="240" y="186" width="208.3" height="26" fill="#3b82f6" rx="3"/>
+<text x="456.3" y="204.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">1.00</text>
+<text x="224.0" y="254.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#111827">3-cycle BC</text>
+<rect x="240" y="234" width="395.8" height="26" fill="#3b82f6" rx="3"/>
+<text x="643.8" y="252.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">1.90</text>
+<text x="224.0" y="302.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#111827">Wait-jittered BC</text>
+<rect x="240" y="282" width="520.8" height="26" fill="#3b82f6" rx="3"/>
+<text x="768.8" y="300.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">2.50</text>
+<text x="224.0" y="350.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#111827">BC+PPO best 25k</text>
+<rect x="240" y="330" width="625.0" height="26" fill="#f59e0b" rx="3"/>
+<text x="873.0" y="348.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">3.00</text>
+<text x="224.0" y="398.0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="end" fill="#111827">BC+PPO final 50k</text>
+<rect x="240" y="378" width="177.1" height="26" fill="#3b82f6" rx="3"/>
+<text x="425.1" y="396.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start" fill="#111827">0.85</text>
+<text x="552.5" y="478.0" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle" fill="#111827">Mean soups delivered</text>
+<text x="890.0" y="488.0" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="400" text-anchor="end" fill="#111827">Source: docs/report_materials.md and run metrics</text>
+</svg>

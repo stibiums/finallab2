@@ -6,6 +6,34 @@
 
 本草稿基于 `docs/experiment_log.md` 和 `docs/report_materials.md` 整理。它不是完整排版版报告，而是可直接扩写为课程报告的正文骨架。
 
+## 图表与演示索引
+
+报告图：
+
+| 编号 | 文件 | 用途 |
+| --- | --- | --- |
+| Figure 1 | [router_comparison.svg](assets/router_comparison.svg) | 对比 PPO-only router、3-cycle BC router 和 perturbed BC+PPO router。 |
+| Figure 2 | [small_corridor_progression.svg](assets/small_corridor_progression.svg) | 展示 `small_corridor` 从 PPO 失败到 3-soup specialist 的过程。 |
+| Figure 3 | [partner_robustness.svg](assets/partner_robustness.svg) | 展示 self-play 成功和 held-out partner 崩溃之间的差距。 |
+
+![Router comparison](assets/router_comparison.svg)
+
+![Small corridor progression](assets/small_corridor_progression.svg)
+
+![Partner robustness](assets/partner_robustness.svg)
+
+推荐 GIF：
+
+| Demo | Link | 用途 |
+| --- | --- | --- |
+| Default PPO baseline | [demo.gif](../outputs/runs/baseline_simple/demo/demo.gif) | 展示 `simple` baseline 成功。 |
+| Sparse reward failure | [demo.gif](../outputs/runs/no_shaping_simple/demo/demo.gif) | 展示 sparse-only PPO 失败。 |
+| Naive multi-layout failure | [simple_demo.gif](../outputs/runs/multi_layout_curriculum/demo/simple_demo.gif) | 展示朴素混训问题。 |
+| `random0` specialist | [random0_long_demo.gif](../outputs/runs/baseline_random0_long/demo/random0_long_demo.gif) | 展示 hard-layout specialist。 |
+| `random1` specialist | [random1_demo.gif](../outputs/runs/baseline_random1/demo/random1_demo.gif) | 展示另一张 hard layout。 |
+| `unident_s` specialist | [unident_s_demo.gif](../outputs/runs/baseline_unident_s/demo/unident_s_demo.gif) | 展示最强 specialist。 |
+| Best `small_corridor` specialist | [small_corridor_full_chain_3cycle_jitter3_bc_ppo_best_demo.gif](../outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/demo/small_corridor_full_chain_3cycle_jitter3_bc_ppo_best_demo.gif) | 展示最终 `small_corridor` 成功。 |
+
 ## 摘要
 
 本项目研究两个智能体在 Overcooked 环境中的协作学习问题。我们以 Stable-Baselines3 PPO 为基础算法，通过 PantheonRL 的 simultaneous-agent wrapper 训练两个策略，并以每局交付汤数作为主要评价指标。实验显示，默认 reward shaping 可以让 PPO 在简单地图 `simple` 上学到有效协作策略，但纯 sparse reward、zero-shot 跨地图迁移和朴素多地图混训均表现不佳。
