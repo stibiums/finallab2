@@ -426,6 +426,8 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | perturbed 3-cycle small corridor BC+PPO | `scripts/collect_delivery_demos.sh --full-chain-wait-jitter 3` + `scripts/train_curriculum.sh` | Adds wait perturbations and uses checkpoint selection; reaches 3.00 soups on `small_corridor` at the 25k checkpoint |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
+| random1 held-out seed72 | `configs/baseline_random1_seed72.json` | Add a third `random1` partner for held-out compatibility testing |
+| random1 partner diversity | `configs/partner_diversity_random1.json` | Train one `random1` ego against two fixed partners; improves in-pool compatibility but remains weak on held-out seed72 |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |
 | unident_s held-out seed | `configs/baseline_unident_s_seed81.json` | Test whether `unident_s` is robust across independently trained partners |
 | simple+random0 router | `configs/router_simple_random0.json` | Compose map specialists and measure routed coverage |

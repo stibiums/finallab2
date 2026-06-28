@@ -1089,6 +1089,67 @@ Conclusion: perturbed demonstrations plus checkpoint selection solve the immedia
   - `outputs/runs/small_corridor_shaping_v1/traces/small_corridor_shaping_trace.json`
   - `outputs/runs/baseline_random1/traces/random1_trace.json`
 
+## Step 23: `random1` Partner-Aware Training
+
+This step tests whether training an ego policy against multiple fixed `random1`
+partners can repair the partner mismatch collapse found in Step 11.
+
+New configs:
+
+- `configs/partner_diversity_random1.json`
+- `configs/baseline_random1_seed72.json`
+
+Commands:
+
+```bash
+bash scripts/train_diverse.sh configs/partner_diversity_random1.json
+bash scripts/train.sh configs/baseline_random1_seed72.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1_three_partners
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_random1 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1_three_partners
+```
+
+Three-partner `random1` compatibility matrix, reported as mean soups delivered:
+
+| Ego run | `baseline_random1` partner | `baseline_random1_seed71` partner | `baseline_random1_seed72` partner | Average | Minimum |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `baseline_random1` | 5.80 | 0.25 | 0.65 | 2.23 | 0.25 |
+| `baseline_random1_seed71` | 0.00 | 5.20 | 0.35 | 1.85 | 0.00 |
+| `baseline_random1_seed72` | 0.75 | 0.00 | 1.15 | 0.63 | 0.00 |
+| `partner_diversity_random1` | 2.25 | 4.55 | 0.45 | 2.42 | 0.45 |
+
+The partner-diversity ego was trained against `baseline_random1` and
+`baseline_random1_seed71` as fixed partners. Within that training partner pool,
+it improves the minimum from 0.25 soups to 2.25 soups and the average to 3.40
+soups. However, it still performs poorly with the held-out seed72 partner
+(0.45 soups), so this is not enough to claim true partner robustness.
+
+Conclusion: multi-partner training is directionally useful for the partners it
+sees, but a two-partner pool does not generalize reliably to a new `random1`
+partner. The current router should keep `baseline_random1` for the `random1`
+route because its self-play route score remains 5.80 soups, while
+`partner_diversity_random1` is best treated as a robustness diagnostic.
+
+Artifacts:
+
+- `outputs/runs/partner_diversity_random1/metrics/train_summary.json`
+- `outputs/runs/partner_diversity_random1/metrics/partner_matrix_hard_random1_three_partners.csv`
+- `outputs/runs/baseline_random1_seed72/metrics/train_summary.json`
+- `outputs/runs/baseline_random1_seed72/metrics/partner_matrix_hard_random1_three_partners.csv`
+- `outputs/runs/baseline_random1/metrics/partner_matrix_hard_random1_three_partners.csv`
+- `outputs/runs/baseline_random1_seed71/metrics/partner_matrix_hard_random1_three_partners.csv`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1096,6 +1157,6 @@ The next project direction should move beyond naive multi-layout mixing:
 1. Assemble report tables and demo package around the current strongest router: PPO-only four-layout router, 3-cycle BC router, and checkpoint-selected perturbed BC+PPO router.
 2. Add or emphasize periodic checkpoint selection for specialist runs, because `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` proves final checkpoints can be much worse than best checkpoints.
 3. Try a policy-selection or layout-conditioned comparison only after using the improved router as the benchmark.
-4. Stronger partner-diversity: use held-out partners during training, not only during evaluation, especially for the brittle `random1` layout.
+4. Stronger partner-diversity: expand the `random1` partner population beyond two training partners before expecting held-out robustness.
 5. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the solved 3-soup specialist.
 6. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.

@@ -21,10 +21,10 @@ Key results so far:
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
 | PPO-only onion router | 9.23 average soups, 5.80 min soups over four PPO-routed layouts | Strongest pure-PPO specialist composition, but it skips `small_corridor`. |
 | onion router with `small_corridor` BC+PPO | 7.98 average soups, 3.00 min soups over five onion layouts | Broadest current coverage; the minimum is now `small_corridor` at 3 soups. |
-| hard-layout partner robustness | mixed | `unident_s` is robust, `random1` is brittle, and `random0` is asymmetric. |
+| hard-layout partner robustness | mixed | `unident_s` is robust, `random1` remains brittle under held-out partners, and `random0` is asymmetric. A two-partner `random1` diversity run improves in-pool compatibility but not true held-out robustness. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
-The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now turning the specialist/router result into a clean report and strengthening partner robustness for the successful PPO specialists.
+The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now final submission polish and, if time remains, a larger-population partner-robustness extension.
 
 ## Project Goal
 
@@ -259,7 +259,7 @@ Phase success criterion:
 
 ## Phase 3: Robustness And Partner Generalization
 
-Status: initial hard-layout matrices completed; stronger partner-aware training remains future work.
+Status: initial hard-layout matrices completed; a first `random1` partner-aware training run is also completed, but stronger population training remains future work.
 
 Why this phase matters:
 
@@ -293,10 +293,10 @@ Completed hard-layout matrix summary:
 | Layout | Self-play result | Held-out partner result | Interpretation |
 | --- | ---: | ---: | --- |
 | `random0` | 6.30 to 8.85 soups | 1.65 to 7.70 soups | Asymmetric. The seed-52 ego is robust to the old partner, but the old ego is brittle with the seed-52 partner. |
-| `random1` | 5.20 to 5.80 soups | 0.00 to 0.25 soups | Strong partner brittleness despite good self-play. |
+| `random1` | 5.20 to 5.80 soups | 0.00 to 0.25 soups in the initial two-seed matrix; 0.45 soups for `partner_diversity_random1` with held-out seed72 | Strong partner brittleness despite good self-play. Two-partner diversity improves in-pool compatibility but does not solve held-out robustness. |
 | `unident_s` | 12.60 to 12.70 soups | 12.60 to 12.65 soups | Robust across two independent seeds. |
 
-Decision: partner robustness must be reported per layout. `unident_s` can be described as robust across the tested seeds, but `random1` should be described as a self-play specialist rather than a generally compatible teammate.
+Decision: partner robustness must be reported per layout. `unident_s` can be described as robust across the tested seeds, but `random1` should be described as a self-play specialist rather than a generally compatible teammate. The `partner_diversity_random1` result is useful evidence that partner-aware training helps seen partner styles, not evidence that the router has a robust `random1` teammate.
 
 ## Phase 4: Unified Or Layout-Conditioned Policy
 
@@ -385,7 +385,7 @@ The next concrete work item is:
 
 1. Do final submission polish on `report/final_report.pdf` and `report/slides.pdf`: add course/team metadata if required by the teacher, and adjust wording to the final submission template if one is provided.
 2. Keep the three router baselines explicit in the final text: PPO-only four-layout router (`9.23` average, `5.80` min), five-layout router with 3-cycle BC `small_corridor` (`7.76` average, `1.90` min), and five-layout router with checkpoint-selected perturbed BC+PPO (`7.98` average, `3.00` min).
-3. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.
+3. If time remains, extend `random1` partner-aware training to a larger partner population; the two-partner run improved in-pool compatibility but still scored only 0.45 soups with held-out seed72.
 4. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the now-successful 3-soup specialist.
 
 After each new attempt, decide whether to:

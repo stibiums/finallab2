@@ -101,6 +101,7 @@ PPO baseline → failure analysis → specialists → layout router
 
 - Self-play 分数不能代表真实鲁棒性。
 - `random1` self-play 有 5.80 soups，但 held-out partner 几乎归零。
+- 两 partner 的 `partner_diversity_random1` 改善 seen partners，但 held-out seed72 仍只有 0.45 soups。
 - `unident_s` 在测试 seed 间更稳定。
 - 报告中必须区分 self-play success 与 partner robustness。
 
@@ -113,7 +114,7 @@ PPO baseline → failure analysis → specialists → layout router
 3. Single-layout specialists 能解决多个 hard layouts。
 4. Layout router 是当前最强 practical method。
 5. `small_corridor` 需要 scripted BC、perturbation 和 checkpoint selection。
-6. 后续重点是 partner-aware training 和统一策略蒸馏。
+6. 后续重点是更大 partner population 和统一策略蒸馏。
 
 ---
 
