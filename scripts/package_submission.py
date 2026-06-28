@@ -39,6 +39,7 @@ SELECTED_RUNS = [
     "baseline_random0_long_seed52",
     "baseline_random1",
     "baseline_random1_seed73",
+    "baseline_random1_seed76",
     "baseline_unident_s",
     "small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3",
     "small_corridor_subtask_router_jitter_bc_delivery",

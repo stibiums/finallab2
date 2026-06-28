@@ -74,6 +74,7 @@ failure.
 | Larger `random1` partner-population diagnostic | `outputs/runs/baseline_random1_seed73`, `outputs/runs/partner_diversity_random1_three_partners` |
 | Mixed fixed + learned `random1` partner diagnostic | `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix` |
 | Partner-id conditioned `random1` diagnostic | `outputs/runs/partner_conditioned_random1_four_partners` |
+| Unknown `random1` partner probe | `outputs/runs/baseline_random1_seed76` |
 | Role-balanced `small_corridor` diagnostic | `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` |
 | `small_corridor` subtask-router diagnostic | `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery` |
 
@@ -208,6 +209,9 @@ evaluation, and four-partner matrix metrics.
 After the partner-id conditioned `random1` diagnostic was added, the dry run
 package includes `partner_conditioned_random1_four_partners` train, default
 evaluation, and four-known-partner matrix metrics.
+After the unknown `random1` partner probe was added, the dry run package
+includes `baseline_random1_seed76` train/default metrics plus the conditioned
+unknown-partner assumption sweep.
 
 The generated demo-video draft wrote successfully to
 `report/demo_video_draft.mp4`; `ffprobe` reported duration `437.162760`

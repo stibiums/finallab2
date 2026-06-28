@@ -1731,6 +1731,100 @@ Artifacts:
 - `outputs/runs/partner_conditioned_random1_four_partners/models/ego.zip`
 - `outputs/runs/partner_conditioned_random1_four_partners/models/alt.zip`
 
+## Step 34: Unknown `random1` Partner Probe
+
+This step tests the most important limitation of Step 33: whether the
+partner-id conditioned policy helps with an actually unseen teammate. A new
+`random1` specialist seed is trained and held out from the conditioned policy's
+training partner pool.
+
+New files:
+
+- `configs/baseline_random1_seed76.json`
+- `src/overcooked_project/evaluate_conditioned_unknown.py`
+- `scripts/evaluate_conditioned_unknown.sh`
+
+Commands:
+
+```bash
+bash scripts/train.sh configs/baseline_random1_seed76.json
+
+bash scripts/evaluate_conditioned_unknown.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --partner-run-dir outputs/runs/baseline_random1_seed76 \
+  --layout random1 \
+  --output-name unknown_partner_seed76_conditioned_ids
+
+bash scripts/evaluate_matrix.sh outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed76 \
+  --layout random1 \
+  --output-name unknown_partner_seed76_matrix
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed76 \
+  --layout random1 \
+  --output-name unknown_partner_seed76_matrix
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_random1_three_partners \
+  --partner-run-dir outputs/runs/baseline_random1_seed76 \
+  --layout random1 \
+  --output-name unknown_partner_seed76_matrix
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_random1_three_partners_selfplay_mix \
+  --partner-run-dir outputs/runs/baseline_random1_seed76 \
+  --layout random1 \
+  --output-name unknown_partner_seed76_matrix
+```
+
+Training result for the unknown partner:
+
+| Run | Seed | Timesteps | Train seconds | Deterministic self-play soups |
+| --- | ---: | ---: | ---: | ---: |
+| `baseline_random1_seed76` | 76 | 300000 | 119.20 | 1.55 |
+
+Conditioned ego against unknown seed76 under different assumed partner ids:
+
+| Ego run | Unknown partner | Assumed id | Mean soups | Mean sparse reward | Mean episode reward |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `partner_conditioned_random1_four_partners` | `baseline_random1_seed76` | 0 | 0.00 | 0.0 | 4.65 |
+| `partner_conditioned_random1_four_partners` | `baseline_random1_seed76` | 1 | 0.00 | 0.0 | 14.70 |
+| `partner_conditioned_random1_four_partners` | `baseline_random1_seed76` | 2 | 0.00 | 0.0 | 4.80 |
+| `partner_conditioned_random1_four_partners` | `baseline_random1_seed76` | 3 | 0.00 | 0.0 | 3.60 |
+
+Unconditioned partner-aware egos against unknown seed76:
+
+| Ego run | Unknown partner | Mean soups | Mean sparse reward | Mean episode reward |
+| --- | --- | ---: | ---: | ---: |
+| `baseline_random1` | `baseline_random1_seed76` | 0.00 | 0.0 | 6.30 |
+| `partner_diversity_random1` | `baseline_random1_seed76` | 0.00 | 0.0 | 17.85 |
+| `partner_diversity_random1_three_partners` | `baseline_random1_seed76` | 0.00 | 0.0 | 8.25 |
+| `partner_diversity_random1_three_partners_selfplay_mix` | `baseline_random1_seed76` | 0.00 | 0.0 | 3.45 |
+
+Interpretation:
+
+- The Step 33 partner-id conditioned run improves known-partner average/minimum,
+  but it does not transfer to the unseen seed76 partner under any tested
+  identity assumption.
+- The collapse is not unique to the conditioned policy: all tested
+  unconditioned `random1` partner-aware egos also score 0 soups with seed76.
+- Seed76's own self-play is only 1.55 soups, so this is not a strong held-out
+  partner. Still, it is nonzero and demonstrates that `random1` cross-play
+  remains extremely fragile.
+- The next credible robustness attempt needs either unknown-partner inference,
+  larger population training with held-out validation, or a genuine
+  MAPPO/HAPPO/HARL-style method. Known-partner id conditioning alone should be
+  described as compatibility improvement, not generalization.
+
+Artifacts:
+
+- `outputs/runs/baseline_random1_seed76/metrics/train_summary.json`
+- `outputs/runs/baseline_random1_seed76/metrics/eval_metrics.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed76_conditioned_ids.csv`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed76_conditioned_ids.json`
+- `outputs/runs/baseline_random1/metrics/unknown_partner_seed76_matrix.csv`
+- `outputs/runs/partner_diversity_random1/metrics/unknown_partner_seed76_matrix.csv`
+- `outputs/runs/partner_diversity_random1_three_partners/metrics/unknown_partner_seed76_matrix.csv`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/unknown_partner_seed76_matrix.csv`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1739,9 +1833,9 @@ The next project direction should move beyond naive multi-layout mixing:
    the demo video or use the generated draft if acceptable, and run
    `scripts/package_submission.py` with the real `学号+姓名` archive stem.
 2. Stronger partner-diversity: the first partner-id conditioned run improves
-   four-partner average/minimum on `random1`, but it still does not solve
-   partner robustness. Future work should extend this idea with
-   partner-conditioned policies, unknown-partner evaluation, or
+   four-known-partner average/minimum on `random1`, but the seed76 unknown
+   partner probe collapses to 0 soups. Future work should add unknown-partner
+   inference, larger population training with held-out validation, or
    HARL/MAPPO/HAPPO-style heterogeneous-agent algorithms.
 3. If time remains, test a learned or more structured `small_corridor` subtask
    router with explicit pickup/delivery options. The first hand-written
