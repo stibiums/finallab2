@@ -24,7 +24,7 @@ Key results so far:
 | hard-layout partner robustness | mixed | `unident_s` is robust, `random1` remains brittle under held-out partners, and `random0` is asymmetric. A two-partner `random1` diversity run improves in-pool compatibility but not true held-out robustness. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
-The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now final submission polish and, if time remains, a larger-population partner-robustness extension.
+The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now final submission polish: the report/slides are exported, and the remaining manual item is course identity metadata plus an actual demo recording if required.
 
 ## Project Goal
 
@@ -351,6 +351,7 @@ Recommended figures/tables:
 | Final report draft | `report/final_report.md` |
 | Slides draft | `report/slides.md` |
 | Final report exports | `report/final_report.html`, `report/final_report.pdf`, `report/slides.html`, `report/slides.pdf` |
+| Submission checklist | `docs/submission_manifest.md`, `report/demo_script.md` |
 | Reward shaping ablation table | `outputs/runs/*/metrics/eval_metrics.json` |
 | Cross-layout matrix | `outputs/runs/*/metrics/zero_shot_layouts.csv` |
 | Router coverage table | `outputs/runs/router_*/metrics/router_eval.csv` |
@@ -383,10 +384,11 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Do final submission polish on `report/final_report.pdf` and `report/slides.pdf`: add course/team metadata if required by the teacher, and adjust wording to the final submission template if one is provided.
-2. Keep the three router baselines explicit in the final text: PPO-only four-layout router (`9.23` average, `5.80` min), five-layout router with 3-cycle BC `small_corridor` (`7.76` average, `1.90` min), and five-layout router with checkpoint-selected perturbed BC+PPO (`7.98` average, `3.00` min).
-3. If time remains, extend `random1` partner-aware training to a larger partner population; the two-partner run improved in-pool compatibility but still scored only 0.45 soups with held-out seed72.
-4. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the now-successful 3-soup specialist.
+1. Add course/team/name/student-id metadata to `report/final_report.md` if the teacher requires it or provides a template; current report intentionally avoids fake placeholders.
+2. Record the required demo video using `report/demo_script.md`; GIF demos are ready, but the course prompt asks for a complete screen recording.
+3. Package the final archive as `学号+姓名`, including report PDF, code/config/scripts, selected trained models, metrics, and demo artifacts listed in `docs/submission_manifest.md`.
+4. If time remains after submission packaging, extend `random1` partner-aware training to a larger partner population; the two-partner run improved in-pool compatibility but still scored only 0.45 soups with held-out seed72.
+5. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the now-successful 3-soup specialist.
 
 After each new attempt, decide whether to:
 

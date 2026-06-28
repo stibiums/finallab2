@@ -1150,13 +1150,62 @@ Artifacts:
 - `outputs/runs/baseline_random1/metrics/partner_matrix_hard_random1_three_partners.csv`
 - `outputs/runs/baseline_random1_seed71/metrics/partner_matrix_hard_random1_three_partners.csv`
 
+## Step 24: Submission Readiness Audit
+
+This step audits the final packaging requirements from `组队课题.pdf` and maps
+the current repository artifacts to those requirements.
+
+Assignment requirements extracted from the PDF:
+
+- Final archive name should be `学号+姓名`.
+- Research report should be submitted as PDF and should include the research
+  plan, training process and parameters, core code, experimental analysis,
+  interesting observations, figures, and references.
+- Complete code and trained models should be submitted.
+- Demo recording should show how to start the algorithm and the final result.
+- Grading split is 60% report, 40% code plus demo.
+- For non-graduating students, the prompt deadline is 2026-07-01 18:00; for
+  graduating students, it is 2026-06-19 18:00.
+
+New submission-facing docs:
+
+- `docs/submission_manifest.md`: maps report/code/models/metrics/demo assets to
+  the assignment requirements and notes the remaining manual items.
+- `report/demo_script.md`: gives a 5-8 minute recording outline, commands to
+  show, narration points, and GIF demo order.
+
+Current package-ready artifacts:
+
+- Report PDF: `report/final_report.pdf` (8 pages).
+- Support slides: `report/slides.pdf` (14 pages).
+- Main code/config/scripts: `src/`, `configs/`, `scripts/`.
+- Selected trained runs: `baseline_simple`, `no_shaping_simple`,
+  `multi_layout_curriculum`, `baseline_random0_long_seed52`,
+  `baseline_random1`, `baseline_unident_s`,
+  `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune`,
+  `router_onion_layouts_with_small_corridor_jitter3_bc_ppo`, and
+  `partner_diversity_random1`.
+- Demo GIFs listed in `docs/submission_manifest.md`.
+
+Remaining manual items before upload:
+
+1. Add real course/team/name/student-id metadata if required by the final
+   template.
+2. Record the screen-demo video; GIF demos are ready but are not the same as the
+   prompt's requested complete recording.
+3. Rename the final archive to `学号+姓名`.
+4. Decide whether to include the large `external/PantheonRL` submodule offline
+   or rely on `git submodule update --init --recursive`.
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
 
-1. Assemble report tables and demo package around the current strongest router: PPO-only four-layout router, 3-cycle BC router, and checkpoint-selected perturbed BC+PPO router.
-2. Add or emphasize periodic checkpoint selection for specialist runs, because `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` proves final checkpoints can be much worse than best checkpoints.
-3. Try a policy-selection or layout-conditioned comparison only after using the improved router as the benchmark.
-4. Stronger partner-diversity: expand the `random1` partner population beyond two training partners before expecting held-out robustness.
-5. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the solved 3-soup specialist.
-6. Tomato support decision: either avoid tomato maps in this environment stack or patch/replace the featurizer before using tomato layouts.
+1. Final submission packaging: add real identity metadata if required, record
+   the demo video, and package the archive as `学号+姓名`.
+2. Stronger partner-diversity: expand the `random1` partner population beyond
+   two training partners before expecting held-out robustness.
+3. If time remains, test role-balanced `small_corridor` demos or a subtask
+   router as an extension beyond the solved 3-soup specialist.
+4. Tomato support decision: either avoid tomato maps in this environment stack
+   or patch/replace the featurizer before using tomato layouts.
