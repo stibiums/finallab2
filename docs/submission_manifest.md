@@ -119,6 +119,13 @@ Dry-run the final package checklist:
 python scripts/package_submission.py --name 学号+姓名 --dry-run
 ```
 
+Run a full preflight check. Without real metadata or a demo video, this should
+pass the required artifact checks and warn about the remaining manual items:
+
+```bash
+python scripts/check_submission_ready.py --name 学号+姓名
+```
+
 Create the compact final archive after replacing `学号+姓名` with the real
 archive name:
 
@@ -160,6 +167,8 @@ Packaging verification performed on 2026-06-28:
 
 ```bash
 python -m py_compile scripts/apply_submission_metadata.py scripts/package_submission.py
+python -m py_compile scripts/check_submission_ready.py
+python scripts/check_submission_ready.py --name 学号+姓名
 python scripts/apply_submission_metadata.py --metadata tmp/submission_metadata_test.json --dry-run
 python -m py_compile scripts/package_submission.py
 python scripts/package_submission.py --name submission_dry_run --dry-run
@@ -169,6 +178,11 @@ python scripts/package_submission.py --name submission_dry_run --output-dir tmp/
 The compact test archive wrote successfully to
 `tmp/package_test/submission_dry_run.zip` and contained the required report,
 code, model, demo, and router-metric paths checked after creation.
+
+Current expected preflight status before real identity/video are provided:
+required artifacts pass, while the script warns about the placeholder archive
+name, missing real `report/submission_metadata.json`, missing demo video path,
+and local git state if there are uncommitted changes or unpushed commits.
 
 ## Manual Items Before Final Upload
 

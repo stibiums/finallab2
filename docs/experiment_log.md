@@ -1281,6 +1281,44 @@ Conclusion: final identity metadata is now ready to apply as soon as the real
 submission information is available, without adding placeholders to the current
 report.
 
+## Step 27: Submission Preflight Helper
+
+This step adds a read-only preflight script so the final submission state can be
+checked before packaging.
+
+New script:
+
+- `scripts/check_submission_ready.py`
+
+Checks:
+
+- required report PDFs and source files,
+- submission manifest and demo script,
+- source/config/script directories,
+- selected package manifest entries from `scripts/package_submission.py`,
+- optional real `report/submission_metadata.json`,
+- optional demo recording path,
+- final archive name,
+- git worktree and branch status.
+
+Verified commands:
+
+```bash
+python -m py_compile scripts/check_submission_ready.py scripts/package_submission.py scripts/apply_submission_metadata.py
+python scripts/check_submission_ready.py --name 学号+姓名
+```
+
+Current expected result without real personal metadata or a demo recording:
+
+- 0 failures.
+- Warnings for placeholder archive name, missing real metadata JSON, missing
+  demo video path, dirty worktree while this change is uncommitted, and branch
+  ahead of remote.
+
+Conclusion: final packaging now has a read-only audit step. Once real
+`学号+姓名`, optional `report/submission_metadata.json`, and optional demo video
+are available, rerun the preflight and then build the archive.
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:

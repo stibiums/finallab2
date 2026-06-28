@@ -36,6 +36,7 @@
 From the project root, first dry-run the package manifest:
 
 ```bash
+python scripts/check_submission_ready.py --name 学号+姓名
 python scripts/package_submission.py --name 学号+姓名 --dry-run
 ```
 
