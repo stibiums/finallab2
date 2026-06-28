@@ -188,6 +188,39 @@ bash scripts/train_curriculum.sh configs/baseline_small_corridor.json \
   --eval-episodes 20
 ```
 
+Collect and train a 3-cycle full-chain `small_corridor` BC specialist:
+
+```bash
+bash scripts/collect_delivery_demos.sh \
+  --config configs/baseline_small_corridor.json \
+  --mode full_chain \
+  --full-chain-cycles 3 \
+  --episodes 100 \
+  --max-steps 400 \
+  --output outputs/demos/small_corridor_full_chain_3cycle_scripted.json
+
+bash scripts/train_delivery_bc.sh \
+  --config configs/baseline_small_corridor.json \
+  --init-run-dir outputs/runs/small_corridor_structured_shaping_v3 \
+  --demo-path outputs/demos/small_corridor_full_chain_3cycle_scripted.json \
+  --run-name small_corridor_full_chain_3cycle_bc_from_v3 \
+  --epochs 60 \
+  --batch-size 256 \
+  --learning-rate 0.001
+
+bash scripts/evaluate.sh outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3 \
+  --episodes 20 \
+  --horizon 400 \
+  --output-name eval_standard_start_h400
+
+bash scripts/train_curriculum.sh configs/baseline_small_corridor.json \
+  --run-name small_corridor_full_chain_3cycle_bc_ppo_finetune \
+  --init-run-dir outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3 \
+  --timesteps 50000 \
+  --eval-interval 25000 \
+  --eval-episodes 20
+```
+
 Train held-out hard-layout partner seeds:
 
 ```bash
@@ -295,6 +328,19 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
   --output-name router_eval
 ```
 
+Evaluate the current broadest onion-layout router with the 3-cycle `small_corridor` BC specialist:
+
+```bash
+bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route simple=outputs/runs/curriculum_simple_random0 \
+  --route random0=outputs/runs/baseline_random0_long_seed52 \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --route small_corridor=outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3 \
+  --output-dir outputs/runs/router_onion_layouts_with_small_corridor_3cycle_bc \
+  --output-name router_eval
+```
+
 Run hard-layout partner-robustness matrices:
 
 ```bash
@@ -329,6 +375,7 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | scripted delivery demos | `scripts/collect_delivery_demos.sh` | Generate clean final-delivery trajectories for later behavior cloning |
 | delivery behavior cloning | `scripts/train_delivery_bc.sh` | Train PPO policy heads from scripted delivery observations/actions; solves delivery warm-start but not full standard start |
 | full-chain small corridor BC | `scripts/collect_delivery_demos.sh --mode full_chain` + `scripts/train_delivery_bc.sh` | Behavior-clone one complete standard-start cooking chain; reaches 1 soup where PPO stays at 0 |
+| 3-cycle full-chain small corridor BC | `scripts/collect_delivery_demos.sh --mode full_chain --full-chain-cycles 3` + `scripts/train_delivery_bc.sh` | Behavior-clone a repeated cooking loop; improves `small_corridor` to 1.90 average soups, though still brittle |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |

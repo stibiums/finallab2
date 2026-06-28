@@ -57,6 +57,7 @@ def load_bc_dataset(demo_path: str | Path) -> dict[str, Any]:
             for key in [
                 "config",
                 "mode",
+                "full_chain_cycles",
                 "episodes",
                 "max_steps",
                 "successes",

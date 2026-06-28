@@ -302,6 +302,8 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
 | `small_corridor_delivery_bc_ppo_finetune` | 65 | 50000 | 22.53 | 1.00 warm-start / 0.00 standard | 20.0 / 0.0 | 20.99 / 0.00 | - |
 | `small_corridor_full_chain_bc_from_v3` | 60 | BC 60 epochs | - | 1.00 standard | 20.0 | 34.00 | 1.0 |
 | `small_corridor_full_chain_bc_ppo_finetune` | 60 | 50000 | 26.46 | 1.00 best / 0.90 final | 20.0 / 18.0 | 34.00 / 31.50 | - |
+| `small_corridor_full_chain_3cycle_bc_from_v3` | 60 | BC 60 epochs | - | 1.90 standard | 38.0 | 71.05 | 3.0 |
+| `small_corridor_full_chain_3cycle_bc_ppo_finetune` | 60 | 50000 | 26.46 | 1.90 best / 1.55 final | 38.0 / 31.0 | 71.05 / 62.45 | - |
 | `baseline_random1` | 70 | 300000 | 116.94 | 5.80 | 116.0 | 225.10 | 6.0 |
 | `baseline_random1_seed71` | 71 | 300000 | 116.99 | 5.20 | 104.0 | 202.80 | - |
 | `baseline_unident_s` | 80 | 300000 | 118.35 | 12.70 | 254.0 | 481.25 | 13.0 |
@@ -309,6 +311,7 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
 | `router_onion_layouts` | - | 0 | - | 9.55 / 6.30 / 5.80 / 12.70 | 191.0 / 126.0 / 116.0 / 254.0 | 360.40 / 244.45 / 225.10 / 481.25 | - |
 | `router_onion_layouts_seed52_random0` | - | 0 | - | 9.55 / 8.85 / 5.80 / 12.70 | 191.0 / 177.0 / 116.0 / 254.0 | 360.40 / 339.45 / 225.10 / 481.25 | - |
 | `router_onion_layouts_with_small_corridor_bc` | - | 0 | - | 9.55 / 8.85 / 1.00 / 5.80 / 12.70 | 191.0 / 177.0 / 20.0 / 116.0 / 254.0 | 360.40 / 339.45 / 34.00 / 225.10 / 481.25 | - |
+| `router_onion_layouts_with_small_corridor_3cycle_bc` | - | 0 | - | 9.55 / 8.85 / 1.90 / 5.80 / 12.70 | 191.0 / 177.0 / 38.0 / 116.0 / 254.0 | 360.40 / 339.45 / 71.05 / 225.10 / 481.25 | - |
 
 ## Step 1: Reward-Shaping Ablation
 
@@ -775,6 +778,61 @@ The five-onion-layout average is 7.58 soups and the minimum is 1.00 soup. This i
 
 Conclusion: full-chain BC changes `small_corridor` from a zero-sparse failure into a one-soup standard-start specialist. The important limitation is that this is imitation of one complete chain, not autonomous discovery of a repeatable cooking loop. PPO fine-tuning did not improve it at 50k steps, so the next optimization should either collect multi-cycle and perturbed full-chain demos, or treat this as a hierarchical/specialist component rather than pretending it is a pure PPO solution.
 
+## Step 16: Multi-Cycle Small Corridor Behavior Cloning
+
+This step follows the Step 15 limitation directly. The scripted full-chain collector now supports `--full-chain-cycles`, so the same standard-start plan can demonstrate repeated cooking and serving loops instead of stopping after the first soup.
+
+Scripted 3-cycle demos:
+
+| Artifact | Episodes | Successes | Success rate | Mean success steps | Meaning |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `outputs/demos/small_corridor_full_chain_3cycle_scripted.json` | 100 | 100 | 1.00 | 376.0 | Three full standard-start soup cycles are mechanically feasible and can be demonstrated reliably. |
+
+BC setup:
+
+| Run | Init run | Demo file | Epochs | Dataset steps | Ego val acc | Alt val acc |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| `small_corridor_full_chain_3cycle_bc_from_v3` | `small_corridor_structured_shaping_v3` | `outputs/demos/small_corridor_full_chain_3cycle_scripted.json` | 60 | 37600 | 1.00 | 0.9762 |
+
+Standard-start evaluation:
+
+| Run | Horizon | Mean soups | Mean sparse reward | Mean episode reward | Interpretation |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `small_corridor_full_chain_3cycle_bc_from_v3` | 400 | 1.90 | 38.0 | 71.05 | Multi-cycle BC improves over the one-soup BC and sometimes completes all three cycles. |
+| `small_corridor_full_chain_3cycle_bc_ppo_finetune` best | 400 | 1.90 | 38.0 | 71.05 | The best checkpoint remains the initial BC policy. |
+| `small_corridor_full_chain_3cycle_bc_ppo_finetune` 25k | 400 | 1.00 | 20.0 | 34.00 | PPO fine-tuning initially collapses back to a one-soup policy. |
+| `small_corridor_full_chain_3cycle_bc_ppo_finetune` final 50k | 400 | 1.55 | 31.0 | 62.45 | PPO recovers some multi-cycle behavior but still underperforms BC-only. |
+
+Episode-level distribution:
+
+| Run/checkpoint | Soup count distribution over 20 deterministic episodes |
+| --- | --- |
+| `small_corridor_full_chain_3cycle_bc_from_v3` | 10 episodes with 1 soup, 2 with 2 soups, 8 with 3 soups |
+| `small_corridor_full_chain_3cycle_bc_ppo_finetune` 25k | 20 episodes with 1 soup |
+| `small_corridor_full_chain_3cycle_bc_ppo_finetune` final 50k | 4 episodes with 0 soups, 2 with 1 soup, 13 with 2 soups, 1 with 3 soups |
+
+Trace and demo:
+
+| Artifact | Result |
+| --- | --- |
+| `outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3/traces/standard_start_h400_trace.json` | 3.00 soups in one deterministic trace; sparse rewards at steps 122, 249, and 384. |
+| `outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3/demo/small_corridor_full_chain_3cycle_bc_demo.gif` | Qualitative demo for a 3-cycle standard-start chain. |
+
+Router impact:
+
+| Layout | Selected run | Mean soups | Mean sparse reward | Mean episode reward | Status |
+| --- | --- | ---: | ---: | ---: | --- |
+| `simple` | `curriculum_simple_random0` | 9.55 | 191.0 | 360.40 | ok |
+| `random0` | `baseline_random0_long_seed52` | 8.85 | 177.0 | 339.45 | ok |
+| `small_corridor` | `small_corridor_full_chain_3cycle_bc_from_v3` | 1.90 | 38.0 | 71.05 | ok |
+| `random1` | `baseline_random1` | 5.80 | 116.0 | 225.10 | ok |
+| `unident_s` | `baseline_unident_s` | 12.70 | 254.0 | 481.25 | ok |
+| `simple_tomato` | - | - | - | - | skipped `NoRoute` |
+
+The five-onion-layout average improves from 7.58 to 7.76 soups, and the minimum improves from 1.00 to 1.90 soups. This is now the broadest current coverage result. It still mixes PPO specialists with one scripted-BC specialist, so the PPO-only four-layout router remains the clean pure-RL comparison.
+
+Conclusion: multi-cycle BC is a real improvement over one-cycle BC: it raises `small_corridor` from 1.00 to 1.90 average soups and produces at least one clean 3-soup trace. The remaining issue is robustness rather than feasibility. The 3-cycle policy sometimes falls out of the repeated loop, and PPO fine-tuning does not fix that at 50k steps. The next `small_corridor` attempt should add perturbed demonstrations, role-balanced variants, or an explicit subtask/controller layer instead of expecting plain PPO fine-tuning to stabilize the loop.
+
 ## Current Findings
 
 1. The local machine can run 200k-step PPO experiments in about 70-90 seconds per run, so it is enough for short experiments and debugging.
@@ -813,6 +871,10 @@ Conclusion: full-chain BC changes `small_corridor` from a zero-sparse failure in
 34. PPO fine-tuning from full-chain BC does not improve the policy at 50k steps; the best checkpoint remains the initial BC policy, while the final checkpoint drops to 0.90 soups.
 35. Adding the full-chain BC specialist to the router gives nonzero coverage on all five onion layouts, with 7.58 average soups and 1.00 minimum soup.
 36. The new `small_corridor` result should be framed as scripted imitation / specialist rescue, not as evidence that PPO alone solved the layout.
+37. Multi-cycle full-chain demos solve three repeated `small_corridor` soup cycles with 100/100 scripted success and mean 376 steps.
+38. Multi-cycle BC improves standard-start `small_corridor` from 1.00 to 1.90 mean soups and can complete 3 soups in a deterministic trace.
+39. PPO fine-tuning from the 3-cycle BC does not outperform BC-only at 50k steps; best remains initialization, while final reaches 1.55 soups.
+40. Replacing the one-cycle `small_corridor` BC route with the 3-cycle BC route improves the five-onion-layout router from 7.58 average / 1.00 min to 7.76 average / 1.90 min.
 
 ## Artifacts
 
@@ -888,6 +950,14 @@ Conclusion: full-chain BC changes `small_corridor` from a zero-sparse failure in
   - `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/metrics/train_summary.json`
   - `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/metrics/eval_standard_start_h400.json`
   - `outputs/runs/small_corridor_full_chain_bc_ppo_finetune/traces/standard_start_h400_trace.json`
+- Multi-cycle full-chain `small_corridor` BC artifacts:
+  - `outputs/demos/small_corridor_full_chain_3cycle_scripted.json`
+  - `outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3/metrics/bc_summary.json`
+  - `outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3/metrics/eval_standard_start_h400.json`
+  - `outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3/traces/standard_start_h400_trace.json`
+  - `outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3/demo/small_corridor_full_chain_3cycle_bc_demo.gif`
+  - `outputs/runs/small_corridor_full_chain_3cycle_bc_ppo_finetune/metrics/curriculum_eval.csv`
+  - `outputs/runs/small_corridor_full_chain_3cycle_bc_ppo_finetune/metrics/train_summary.json`
 - Phase 2 specialist runs:
   - `outputs/runs/baseline_small_corridor/metrics/eval_metrics.json`
   - `outputs/runs/baseline_small_corridor/metrics/zero_shot_layouts.csv`
@@ -917,6 +987,10 @@ Conclusion: full-chain BC changes `small_corridor` from a zero-sparse failure in
   - `outputs/runs/router_onion_layouts_with_small_corridor_bc/router_config.resolved.json`
   - `outputs/runs/router_onion_layouts_with_small_corridor_bc/metrics/router_eval.csv`
   - `outputs/runs/router_onion_layouts_with_small_corridor_bc/metrics/router_eval.json`
+- Onion-router run with 3-cycle full-chain `small_corridor` BC:
+  - `outputs/runs/router_onion_layouts_with_small_corridor_3cycle_bc/router_config.resolved.json`
+  - `outputs/runs/router_onion_layouts_with_small_corridor_3cycle_bc/metrics/router_eval.csv`
+  - `outputs/runs/router_onion_layouts_with_small_corridor_3cycle_bc/metrics/router_eval.json`
 - Demos:
   - `outputs/runs/baseline_simple/demo/demo.gif`
   - `outputs/runs/no_shaping_simple/demo/demo.gif`
@@ -930,6 +1004,7 @@ Conclusion: full-chain BC changes `small_corridor` from a zero-sparse failure in
   - `outputs/runs/baseline_random0/demo/simple_transfer_demo.gif`
   - `outputs/runs/baseline_random0_long/demo/random0_long_demo.gif`
   - `outputs/runs/small_corridor_full_chain_bc_from_v3/demo/small_corridor_full_chain_bc_demo.gif`
+  - `outputs/runs/small_corridor_full_chain_3cycle_bc_from_v3/demo/small_corridor_full_chain_3cycle_bc_demo.gif`
   - `outputs/runs/baseline_random1/demo/random1_demo.gif`
   - `outputs/runs/baseline_unident_s/demo/unident_s_demo.gif`
 - Episode traces:
@@ -941,7 +1016,7 @@ Conclusion: full-chain BC changes `small_corridor` from a zero-sparse failure in
 
 The next project direction should move beyond naive multi-layout mixing:
 
-1. Improve `small_corridor` beyond one scripted-BC soup: collect multi-cycle and perturbed full-chain demos, then test whether BC or BC+PPO can deliver more than one soup.
+1. Stabilize `small_corridor` beyond the current 1.90-soup 3-cycle BC result: collect perturbed and role-balanced full-chain demos, then test whether BC or BC+PPO can make 2-3 soups repeatable instead of occasional.
 2. Add periodic checkpoint selection for specialist runs, because training reward can be non-monotonic and the final checkpoint is not guaranteed to be best.
 3. Try a policy-selection or layout-conditioned comparison only after using the improved router as the benchmark.
 4. Stronger partner-diversity: use held-out partners during training, not only during evaluation, especially for the brittle `random1` layout.

@@ -17,7 +17,10 @@ def action_index(action) -> int:
     return int(Action.ACTION_TO_INDEX[action])
 
 
-def build_full_chain_action_plan() -> list[tuple[int, int]]:
+def build_full_chain_action_plan(cycles: int = 1) -> list[tuple[int, int]]:
+    if cycles < 1:
+        raise ValueError("cycles must be at least 1.")
+
     n, s, e, w, stay, interact = (
         Direction.NORTH,
         Direction.SOUTH,
@@ -33,27 +36,48 @@ def build_full_chain_action_plan() -> list[tuple[int, int]]:
             actions += [w] * 8 + [n, n] + [e] * 3 + [n, interact]
         return actions
 
-    p0_actions = [e, e, n, interact]
-    p0_actions += p0_trip(return_after=True)
-    p0_actions += p0_trip(return_after=True)
-    p0_actions += p0_trip(return_after=False)
-    p0_actions += [e] + [stay] * 80
+    def first_cycle_p0() -> list:
+        return [e, e, n, interact] + p0_trip(return_after=True) + p0_trip(return_after=True) + p0_trip(
+            return_after=False
+        ) + [e]
 
-    p1_actions = [w, w, n, interact, e, e, e, s]
-    p0_until_pot_free = (
-        [e, e, n, interact]
-        + p0_trip(return_after=True)
-        + p0_trip(return_after=True)
-        + p0_trip(return_after=False)
-        + [e]
-    )
-    while len(p1_actions) < len(p0_until_pot_free):
-        p1_actions.append(stay)
-    p1_actions += [s] + [stay] * 25 + [interact] * 5 + [w] * 9 + [s, interact]
+    def first_cycle_p1(p0_cycle_len: int) -> list:
+        actions = [w, w, n, interact, e, e, e, s]
+        while len(actions) < p0_cycle_len:
+            actions.append(stay)
+        return actions + [s] + [stay] * 25 + [interact] * 5 + [w] * 9 + [s, interact]
 
-    max_len = max(len(p0_actions), len(p1_actions))
-    p0_actions += [stay] * (max_len - len(p0_actions))
-    p1_actions += [stay] * (max_len - len(p1_actions))
+    def later_cycle_p0() -> list:
+        return [w] * 9 + [n, n] + [e] * 3 + [n, interact] + p0_trip(
+            return_after=True
+        ) + p0_trip(return_after=True) + p0_trip(return_after=False) + [e]
+
+    def later_cycle_p1() -> list:
+        return (
+            [stay] * 90
+            + [e] * 9
+            + [n, n]
+            + [w] * 3
+            + [n, interact]
+            + [e] * 3
+            + [s, s]
+            + [interact] * 5
+            + [w] * 9
+            + [s, interact]
+        )
+
+    def append_cycle(p0_cycle: list, p1_cycle: list) -> None:
+        cycle_len = max(len(p0_cycle), len(p1_cycle))
+        p0_actions.extend(p0_cycle + [stay] * (cycle_len - len(p0_cycle)))
+        p1_actions.extend(p1_cycle + [stay] * (cycle_len - len(p1_cycle)))
+
+    p0_actions: list = []
+    p1_actions: list = []
+    first_p0 = first_cycle_p0()
+    append_cycle(first_p0, first_cycle_p1(len(first_p0)))
+    for _ in range(cycles - 1):
+        append_cycle(later_cycle_p0(), later_cycle_p1())
+
     return [(action_index(a0), action_index(a1)) for a0, a1 in zip(p0_actions, p1_actions)]
 
 
@@ -78,14 +102,15 @@ def scripted_action_for_player(player) -> int:
     return action_index(Action.INTERACT)
 
 
-def collect_episode(env, max_steps: int, mode: str) -> dict[str, Any]:
+def collect_episode(env, max_steps: int, mode: str, full_chain_cycles: int) -> dict[str, Any]:
     env.unwrapped.multi_reset()
     initial_state = state_summary(env)
     rows = []
     total_reward = 0.0
     sparse_reward = 0.0
     action_counts = Counter()
-    full_chain_plan = build_full_chain_action_plan() if mode == "full_chain" else None
+    full_chain_plan = build_full_chain_action_plan(full_chain_cycles) if mode == "full_chain" else None
+    target_sparse_reward = 20.0 * full_chain_cycles if mode == "full_chain" else 20.0
 
     for step in range(max_steps):
         before = state_summary(env)
@@ -130,7 +155,7 @@ def collect_episode(env, max_steps: int, mode: str) -> dict[str, Any]:
                 "after": after,
             }
         )
-        if done or row_sparse_reward > 0.0:
+        if done or sparse_reward >= target_sparse_reward:
             break
 
     return {
@@ -140,7 +165,7 @@ def collect_episode(env, max_steps: int, mode: str) -> dict[str, Any]:
         "total_reward": total_reward,
         "sparse_reward": sparse_reward,
         "soups_delivered": sparse_reward / 20.0,
-        "success": sparse_reward > 0.0,
+        "success": sparse_reward >= target_sparse_reward,
         "action_counts": dict(action_counts),
         "steps_detail": rows,
     }
@@ -153,6 +178,7 @@ def collect_demos(config_path: str | Path, episodes: int, max_steps: int, output
         max_steps=max_steps,
         output_path=output_path,
         mode="delivery",
+        full_chain_cycles=1,
     )
 
 
@@ -162,18 +188,23 @@ def collect_scripted_demos(
     max_steps: int,
     output_path: str | Path,
     mode: str,
+    full_chain_cycles: int,
 ):
     register_envs()
     config = load_config(config_path)
     validate_mode_config(config, mode)
     env = gym.make(config["env_id"], **env_config_from_config(config))
-    demos = [collect_episode(env, max_steps=max_steps, mode=mode) for _ in range(episodes)]
+    demos = [
+        collect_episode(env, max_steps=max_steps, mode=mode, full_chain_cycles=full_chain_cycles)
+        for _ in range(episodes)
+    ]
     env.close()
 
     successes = [demo for demo in demos if demo["success"]]
     summary = {
         "config": str(config_path),
         "mode": mode,
+        "full_chain_cycles": full_chain_cycles if mode == "full_chain" else None,
         "episodes": episodes,
         "max_steps": max_steps,
         "successes": len(successes),
@@ -188,6 +219,7 @@ def collect_scripted_demos(
         {
             "output_path": str(output_path),
             "mode": mode,
+            "full_chain_cycles": full_chain_cycles if mode == "full_chain" else None,
             "episodes": episodes,
             "successes": summary["successes"],
             "success_rate": summary["success_rate"],
@@ -210,6 +242,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--episodes", type=int, default=50)
     parser.add_argument("--max-steps", type=int, default=40)
     parser.add_argument(
+        "--full-chain-cycles",
+        type=int,
+        default=1,
+        help="Number of standard-start soup cycles to script when --mode full_chain.",
+    )
+    parser.add_argument(
         "--output",
         default="outputs/demos/small_corridor_delivery_scripted.json",
         help="Output JSON path for scripted demonstrations.",
@@ -225,6 +263,7 @@ def main() -> None:
         max_steps=args.max_steps,
         output_path=args.output,
         mode=args.mode,
+        full_chain_cycles=args.full_chain_cycles,
     )
 
 
