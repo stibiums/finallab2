@@ -325,7 +325,7 @@ Decision rule:
 
 ## Phase 5: Report And Demo Package
 
-Status: continuous, but final assembly should happen after Phase 2 or Phase 3.
+Status: report-facing materials started in `docs/report_materials.md`; final prose and slides remain to be assembled.
 
 Required report components:
 
@@ -345,6 +345,7 @@ Recommended figures/tables:
 | Artifact | Source |
 | --- | --- |
 | Run summary table | `docs/experiment_log.md` |
+| Report-ready summary | `docs/report_materials.md` |
 | Reward shaping ablation table | `outputs/runs/*/metrics/eval_metrics.json` |
 | Cross-layout matrix | `outputs/runs/*/metrics/zero_shot_layouts.csv` |
 | Router coverage table | `outputs/runs/router_*/metrics/router_eval.csv` |
@@ -377,7 +378,7 @@ For every new experiment:
 
 The next concrete work item is:
 
-1. Start assembling the report tables and demo package from `docs/experiment_log.md` and the saved GIFs.
+1. Refine the report tables and demo package now started in `docs/report_materials.md`.
 2. Report three router baselines: PPO-only four-layout router (`9.23` average, `5.80` min), five-layout router with 3-cycle BC `small_corridor` (`7.76` average, `1.90` min), and five-layout router with checkpoint-selected perturbed BC+PPO (`7.98` average, `3.00` min).
 3. Consider partner-aware training for `random1`, because held-out partner evaluation collapses despite strong self-play.
 4. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the now-successful 3-soup specialist.

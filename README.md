@@ -10,6 +10,7 @@
 - Follow-up experiments: partner diversity, zero-shot layout transfer, and multi-layout curriculum.
 - Outputs: trained models, TensorBoard logs, evaluation CSV/JSON, GIF demo.
 - Detailed execution plan: [docs/project_plan.md](docs/project_plan.md).
+- Report-facing tables and demo manifest: [docs/report_materials.md](docs/report_materials.md).
 
 ## Setup
 
