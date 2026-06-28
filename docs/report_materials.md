@@ -1,6 +1,6 @@
 # Overcooked MARL Report Materials
 
-Last updated: 2026-06-28
+Last updated: 2026-06-29
 
 Project path: `/Volumes/share/pku/26_spring/多智能体/finallab2`
 
@@ -99,6 +99,7 @@ Report figure:
 | `partner_diversity_random1_three_partners` | 0.65 to 4.90 with three training partners | 1.00 with held-out seed73 | Raises the seen-partner minimum but does not beat the two-partner run on four-partner average. |
 | `partner_diversity_random1_three_partners_selfplay_mix` | 0.10 with learned `alt.zip` | 0.05 to 1.85 across four fixed partners | Mixed fixed + learned partner training is a negative result. |
 | `partner_conditioned_random1_four_partners` | 5.60 with copied first partner | 0.80 to 1.70 with weaker known partners; 0.00 to 0.05 with unknown seeds 76/77/78 under fixed and inferred ids | Partner-id conditioning improves known-partner avg/min, but does not generalize to held-out partners. |
+| `partner_conditioned_random1_six_partners_holdout78` | 0.00 to 2.10 across six training partners | 0.00 with held-out seed78 under fixed and inferred ids | Larger fixed partner pool is also negative; train-pool average is only 0.66 and adding seed76/77 to training does not make the conditioned ego compatible with them. |
 | `unident_s` specialists | 12.60 to 12.70 | 12.60 to 12.65 | Robust across tested seeds. |
 
 Evidence:
@@ -128,6 +129,9 @@ Evidence:
 - `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed77_inferred_ids.csv`
 - `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed78_conditioned_ids.csv`
 - `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed78_inferred_ids.csv`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/metrics/train_pool_partner_matrix.csv`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/metrics/unknown_partner_seed78_conditioned_ids.csv`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/metrics/unknown_partner_seed78_inferred_ids.csv`
 - `outputs/runs/baseline_random1/metrics/unknown_partner_seed77_matrix.csv`
 - `outputs/runs/baseline_random1/metrics/unknown_partner_seed78_matrix.csv`
 - `outputs/runs/partner_diversity_random1/metrics/unknown_partner_seed77_matrix.csv`

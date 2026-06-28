@@ -107,7 +107,8 @@ PPO baseline → failure analysis → specialists → layout router
 - 两 partner 的 `partner_diversity_random1` 改善 seen partners，但 held-out seed72 仍只有 0.45 soups。
 - 三 partner 训练把 seen-partner minimum 提到 0.65，但 held-out seed73 仍只有 1.00 soups。
 - 固定三 partner + learned partner 混训平均只有 0.69 soups，是负结果。
-- Partner-id conditioning 提升到 known avg 2.34 / min 0.80，但 unknown seed76 仍为 0。
+- Partner-id conditioning 提升到 four-known avg 2.34 / min 0.80，但 unknown seed76/77/78 仍为 0.00 到 0.05。
+- Six-partner conditioned pool 降到 train-pool avg 0.66 / min 0.00，held-out seed78 仍为 0。
 - `unident_s` 在测试 seed 间更稳定。
 - 报告中必须区分 self-play success 与 partner robustness。
 

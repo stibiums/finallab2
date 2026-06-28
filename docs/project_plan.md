@@ -1,6 +1,6 @@
 # Overcooked MARL Project Plan
 
-Last updated: 2026-06-28
+Last updated: 2026-06-29
 
 Project path: `/Volumes/share/pku/26_spring/多智能体/finallab2`
 
@@ -21,7 +21,7 @@ Key results so far:
 | staged `simple + random0` fine-tuning | 9.55 on `simple`, 0.00 on `random0` | Fine-tuning from the easy-map expert does not unlock `random0`. |
 | PPO-only onion router | 9.23 average soups, 5.80 min soups over four PPO-routed layouts | Strongest pure-PPO specialist composition, but it skips `small_corridor`. |
 | onion router with `small_corridor` BC+PPO | 7.98 average soups, 3.00 min soups over five onion layouts | Broadest current coverage; the minimum is now `small_corridor` at 3 soups. |
-| hard-layout partner robustness | mixed | `unident_s` is robust, `random1` remains brittle under held-out partners, and `random0` is asymmetric. Two-partner and three-partner `random1` diversity runs improve parts of the seen-partner pool; a mixed fixed + learned partner run is worse; partner-id conditioning improves four-known-partner avg/min but fails on unknown seed76. |
+| hard-layout partner robustness | mixed | `unident_s` is robust, `random1` remains brittle under held-out partners, and `random0` is asymmetric. Two-partner and three-partner `random1` diversity runs improve parts of the seen-partner pool; a mixed fixed + learned partner run is worse; partner-id conditioning improves four-known-partner avg/min but fails on unknown seeds 76/77/78. A six-partner conditioned run is also negative: seed76/77 remain 0.00 even in the training pool, and held-out seed78 remains 0.00. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
 The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now final submission polish: the report/slides are exported, metadata injection, demo-video draft generation, preflight checks, and compact packaging are scripted. The generated demo-video draft exists locally at `report/demo_video_draft.mp4`. The remaining manual item is real course/member information plus either a real screen recording or acceptance of the generated demo video.
@@ -296,10 +296,10 @@ Completed hard-layout matrix summary:
 | Layout | Self-play result | Held-out partner result | Interpretation |
 | --- | ---: | ---: | --- |
 | `random0` | 6.30 to 8.85 soups | 1.65 to 7.70 soups | Asymmetric. The seed-52 ego is robust to the old partner, but the old ego is brittle with the seed-52 partner. |
-| `random1` | 5.20 to 5.80 soups | 0.00 to 1.10 soups across four fixed partners; `partner_diversity_random1_three_partners` reaches 0.65 min over its three seen partners and 1.00 with held-out seed73; the mixed fixed + learned partner run averages only 0.69; partner-id conditioning improves to 2.34 average and 0.80 minimum over four known partners but scores 0.00 with unknown seed76 | Strong partner brittleness despite good self-play. Partner conditioning helps known teammates but is not unknown-partner robust. |
+| `random1` | 1.50 to 5.80 soups across tested specialists | 0.00 to 1.10 soups across held-out partners; `partner_diversity_random1_three_partners` reaches 0.65 min over its three seen partners and 1.00 with held-out seed73; the mixed fixed + learned partner run averages only 0.69; partner-id conditioning improves to 2.34 average and 0.80 minimum over four known partners but scores 0.00 to 0.05 with unknown seeds 76/77/78; six-partner conditioning still gives 0.00 on training partners seed76/77 and held-out seed78 | Strong partner brittleness despite self-play success. Partner conditioning helps some known teammates but is not unknown-partner robust. |
 | `unident_s` | 12.60 to 12.70 soups | 12.60 to 12.65 soups | Robust across two independent seeds. |
 
-Decision: partner robustness must be reported per layout. `unident_s` can be described as robust across the tested seeds, but `random1` should be described as a self-play specialist rather than a generally compatible teammate. The `partner_diversity_random1` and `partner_diversity_random1_three_partners` results are useful evidence that partner-aware training helps some seen partner styles, not evidence that the router has a robust `random1` teammate. The mixed fixed + learned partner run is a negative result. The partner-id conditioned run is the strongest `random1` known-partner diagnostic so far, but it collapses on unknown seed76; true robustness needs unknown-partner inference, held-out validation, and a stronger MARL formulation.
+Decision: partner robustness must be reported per layout. `unident_s` can be described as robust across the tested seeds, but `random1` should be described as a self-play specialist rather than a generally compatible teammate. The `partner_diversity_random1` and `partner_diversity_random1_three_partners` results are useful evidence that partner-aware training helps some seen partner styles, not evidence that the router has a robust `random1` teammate. The mixed fixed + learned partner run and the six-partner conditioned run are negative results. The four-partner partner-id conditioned run is the strongest `random1` known-partner diagnostic so far, but it collapses on unknown seeds 76/77/78; true robustness needs unknown-partner inference, held-out validation, and a stronger MARL formulation.
 
 ## Phase 4: Unified Or Layout-Conditioned Policy
 
@@ -358,6 +358,7 @@ Recommended figures/tables:
 | Submission packager | `scripts/package_submission.py` |
 | Metadata helper | `scripts/apply_submission_metadata.py`, `report/submission_metadata.example.json` |
 | Submission preflight | `scripts/check_submission_ready.py` |
+| Algorithm comparison plan | `docs/algorithm_comparison_plan.md` |
 | Demo video draft | `scripts/build_demo_video.py`, `report/demo_video_draft.mp4` generated and verified locally |
 | Reward shaping ablation table | `outputs/runs/*/metrics/eval_metrics.json` |
 | Cross-layout matrix | `outputs/runs/*/metrics/zero_shot_layouts.csv` |
@@ -394,7 +395,7 @@ The next concrete work item is:
 1. Fill `report/submission_metadata.json` from `report/submission_metadata.example.json`, then run `scripts/apply_submission_metadata.py --export` if the teacher requires course/team/name/student-id metadata; current report intentionally avoids fake placeholders.
 2. Record the required demo video using `report/demo_script.md`, or use the generated `report/demo_video_draft.mp4` if a GIF-based demo artifact is acceptable.
 3. Run `python scripts/check_submission_ready.py --name 学号+姓名`, then `python scripts/package_submission.py --name 学号+姓名` after replacing the archive stem with the real student/name string, and include a demo video with `--demo-video` if available.
-4. If more experiment time remains, move beyond the completed `random1` held-out validation: seed76, seed77, and seed78 all remain zero or near-zero with fixed ids, simple online-id inference, and older unconditioned partner-aware egos. Next attempts should use stronger latent/context partner inference, recurrent conditioning, larger population training with held-out validation during checkpoint selection, or MAPPO/HAPPO/HARL-style heterogeneous-agent training.
+4. If more experiment time remains, move beyond the completed `random1` held-out validation and six-partner fixed-pool diagnostic: seed76, seed77, and seed78 all remain zero or near-zero with fixed ids, simple online-id inference, older unconditioned partner-aware egos, and the larger six-partner conditioned PPO control. Next attempts should use stronger latent/context partner inference, recurrent conditioning, MAPPO-style centralized training, or HAPPO/HARL-style heterogeneous-agent training. See `docs/algorithm_comparison_plan.md`.
 5. If time remains, move beyond hand-written `small_corridor` subtask rules. Role-balanced BC, held-soup routing, ready-soup routing, and role-specific held-soup routing are all completed; only the BC-only route gets a tiny rescue, while the current best BC+PPO route is hurt or unchanged. A future attempt needs learned gating, confidence checks, or separately trained pickup/delivery options for both roles.
 
 After each new attempt, decide whether to:

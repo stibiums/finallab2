@@ -2054,6 +2054,120 @@ Artifacts:
 - `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/unknown_partner_seed77_matrix.csv`
 - `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/unknown_partner_seed78_matrix.csv`
 
+## Step 38: Six-Partner `random1` Conditioning With Held-Out Seed78
+
+This step tests a stronger fixed-population control before moving to a heavier
+HARL/MAPPO/HAPPO-style implementation. The Step 33 run used four known partners
+and failed on unknown seeds 76/77/78. Here the conditioned ego is trained
+against six known `random1` partners, including seeds 76 and 77, while seed78 is
+held out for validation.
+
+New config:
+
+- `configs/partner_conditioned_random1_six_partners_holdout78.json`
+
+Training partners:
+
+- `outputs/runs/baseline_random1`
+- `outputs/runs/baseline_random1_seed71`
+- `outputs/runs/baseline_random1_seed72`
+- `outputs/runs/baseline_random1_seed73`
+- `outputs/runs/baseline_random1_seed76`
+- `outputs/runs/baseline_random1_seed77`
+
+Held-out partner:
+
+- `outputs/runs/baseline_random1_seed78`
+
+Commands:
+
+```bash
+bash scripts/train_diverse.sh configs/partner_conditioned_random1_six_partners_holdout78.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_conditioned_random1_six_partners_holdout78 \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --partner-run-dir outputs/runs/baseline_random1_seed73 \
+  --partner-run-dir outputs/runs/baseline_random1_seed76 \
+  --partner-run-dir outputs/runs/baseline_random1_seed77 \
+  --layout random1 \
+  --output-name train_pool_partner_matrix
+
+bash scripts/evaluate_conditioned_unknown.sh outputs/runs/partner_conditioned_random1_six_partners_holdout78 \
+  --partner-run-dir outputs/runs/baseline_random1_seed78 \
+  --layout random1 \
+  --output-name unknown_partner_seed78_conditioned_ids
+
+bash scripts/evaluate_conditioned_inference.sh outputs/runs/partner_conditioned_random1_six_partners_holdout78 \
+  --partner-run-dir outputs/runs/baseline_random1_seed78 \
+  --layout random1 \
+  --output-name unknown_partner_seed78_inferred_ids
+```
+
+Training summary:
+
+| Run | Timesteps | Train seconds | Default first-partner soups |
+| --- | ---: | ---: | ---: |
+| `partner_conditioned_random1_six_partners_holdout78` | 300000 | 122.49 | 2.10 |
+
+Known training-partner matrix:
+
+| Partner | Mean soups | Mean sparse reward | Mean episode reward |
+| --- | ---: | ---: | ---: |
+| `baseline_random1` | 2.10 | 42.0 | 90.15 |
+| `baseline_random1_seed71` | 0.60 | 12.0 | 33.05 |
+| `baseline_random1_seed72` | 0.25 | 5.0 | 27.95 |
+| `baseline_random1_seed73` | 1.00 | 20.0 | 53.15 |
+| `baseline_random1_seed76` | 0.00 | 0.0 | 16.35 |
+| `baseline_random1_seed77` | 0.00 | 0.0 | 9.80 |
+
+Held-out seed78 fixed-id sweep:
+
+| Assumed partner id | Mean soups | Mean sparse reward | Mean episode reward |
+| ---: | ---: | ---: | ---: |
+| 0 | 0.00 | 0.0 | 3.45 |
+| 1 | 0.00 | 0.0 | 0.00 |
+| 2 | 0.00 | 0.0 | 6.10 |
+| 3 | 0.00 | 0.0 | 2.85 |
+| 4 | 0.00 | 0.0 | 1.35 |
+| 5 | 0.00 | 0.0 | 3.90 |
+
+Held-out seed78 online-id inference:
+
+| Initial id | Final id counts | Mean soups | Mean sparse reward | Mean episode reward | Mean id switches |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 0 | `{5: 20}` | 0.00 | 0.0 | 3.75 | 2.85 |
+| 1 | `{5: 20}` | 0.00 | 0.0 | 4.90 | 2.85 |
+| 2 | `{5: 20}` | 0.00 | 0.0 | 3.45 | 2.80 |
+| 3 | `{5: 20}` | 0.00 | 0.0 | 4.20 | 2.55 |
+| 4 | `{5: 20}` | 0.00 | 0.0 | 3.60 | 2.15 |
+| 5 | `{5: 20}` | 0.00 | 0.0 | 5.10 | 2.70 |
+
+Interpretation:
+
+- This is a negative result. A larger fixed partner pool improves neither the
+  new seed76/77 training partners nor the held-out seed78 partner enough to
+  count as robust co-play.
+- The online id-inference probe consistently maps seed78 to known id 5, but
+  that does not recover any sparse reward.
+- The next `random1` step should stop expanding the same fixed-id PPO wrapper.
+  A meaningful comparison now needs recurrent/context partner inference,
+  MAPPO-style centralized training, or HAPPO/HARL-style heterogeneous updates.
+
+Artifacts:
+
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/metrics/train_summary.json`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/metrics/train_pool_partner_matrix.csv`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/metrics/unknown_partner_seed78_conditioned_ids.csv`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/metrics/unknown_partner_seed78_inferred_ids.csv`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/traces/unknown_partner_seed78_inferred_ids_initial0_episode0.json`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/traces/unknown_partner_seed78_inferred_ids_initial1_episode0.json`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/traces/unknown_partner_seed78_inferred_ids_initial2_episode0.json`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/traces/unknown_partner_seed78_inferred_ids_initial3_episode0.json`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/traces/unknown_partner_seed78_inferred_ids_initial4_episode0.json`
+- `outputs/runs/partner_conditioned_random1_six_partners_holdout78/traces/unknown_partner_seed78_inferred_ids_initial5_episode0.json`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -2064,10 +2178,12 @@ The next project direction should move beyond naive multi-layout mixing:
 2. Stronger partner-diversity: the first partner-id conditioned run improves
    four-known-partner average/minimum on `random1`, but held-out seeds 76/77/78
    all collapse to zero or near-zero soups under fixed ids, simple online-id
-   inference, and older unconditioned partner-aware egos. Future work should use
-   stronger latent partner inference, recurrent/context conditioning, larger
-   population training with held-out validation during selection, or
-   HARL/MAPPO/HAPPO-style heterogeneous-agent algorithms.
+   inference, and older unconditioned partner-aware egos. The six-partner
+   fixed-pool diagnostic is also negative: seed76/77 remain 0.00 even when
+   included in training, and held-out seed78 remains 0.00. Future work should
+   stop only adding fixed seeds and move to stronger latent partner inference,
+   recurrent/context conditioning, MAPPO-style centralized training, or
+   HAPPO/HARL-style heterogeneous-agent algorithms.
 3. If time remains, test a learned or more structured `small_corridor` subtask
    router with explicit pickup/delivery options. The first hand-written
    held-soup router is completed: it helps BC-only slightly but hurts the

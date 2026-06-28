@@ -56,6 +56,7 @@ SELECTED_RUNS = [
     "partner_diversity_random1_three_partners",
     "partner_diversity_random1_three_partners_selfplay_mix",
     "partner_conditioned_random1_four_partners",
+    "partner_conditioned_random1_six_partners_holdout78",
 ]
 
 IGNORE_NAMES = {
