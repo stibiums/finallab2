@@ -84,6 +84,7 @@ PPO baseline → failure analysis → specialists → layout router
 - Full-chain BC：从标准开局做到 1 soup
 - 3-cycle BC：平均 1.90 soups
 - Wait-jittered BC：平均 2.50 soups
+- Role-balanced BC：平均 2.40 soups，未超过固定分工 BC
 - Perturbed BC + PPO 25k checkpoint：稳定 3.00 soups
 - PPO 50k final：退化到 0.85 soups
 
@@ -114,8 +115,8 @@ PPO baseline → failure analysis → specialists → layout router
 2. Sparse-only、zero-shot、naive multi-layout 都失败。
 3. Single-layout specialists 能解决多个 hard layouts。
 4. Layout router 是当前最强 practical method。
-5. `small_corridor` 需要 scripted BC、perturbation 和 checkpoint selection。
-6. 后续重点是更大 partner population 和统一策略蒸馏。
+5. `small_corridor` 需要 scripted BC、perturbation 和 checkpoint selection；简单 role-balanced BC 不够。
+6. 后续重点是更大 partner population、subtask router 和统一策略蒸馏。
 
 ---
 

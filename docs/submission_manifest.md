@@ -72,6 +72,7 @@ failure.
 | Best five-layout router metrics | `outputs/runs/router_onion_layouts_with_small_corridor_jitter3_bc_ppo` |
 | Partner robustness diagnostic | `outputs/runs/partner_diversity_random1` |
 | Larger `random1` partner-population diagnostic | `outputs/runs/baseline_random1_seed73`, `outputs/runs/partner_diversity_random1_three_partners` |
+| Role-balanced `small_corridor` diagnostic | `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` |
 
 ## Demo Assets
 

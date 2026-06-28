@@ -217,10 +217,11 @@ img {
 <tr><td><code>small_corridor_full_chain_bc_from_v3</code></td><td>1.00</td><td>20.0</td><td>一份汤 full-chain BC 成功。</td></tr>
 <tr><td><code>small_corridor_full_chain_3cycle_bc_from_v3</code></td><td>1.90</td><td>38.0</td><td>多轮 BC 有提升但不稳定。</td></tr>
 <tr><td><code>small_corridor_full_chain_3cycle_jitter3_bc_from_v3</code></td><td>2.50</td><td>50.0</td><td>等待扰动提升鲁棒性。</td></tr>
+<tr><td><code>small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3</code></td><td>2.40</td><td>48.0</td><td>合并 p0/p1 角色数据训练两个模型，没有超过固定分工 BC。</td></tr>
 <tr><td><code>small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune</code> best at 25k</td><td>3.00</td><td>60.0</td><td>20/20 局达到 3 soups。</td></tr>
 <tr><td><code>small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune</code> final 50k</td><td>0.85</td><td>17.0</td><td>过训练后崩溃。</td></tr>
 </tbody></table>
-<p>这说明 <code>small_corridor</code> 的难点不只是 reward coefficient 不合适，而是长时序探索和多子任务衔接困难。Scripted demonstrations 提供了可学习的动作链，wait jitter 让 BC 不再只记住精确时钟。PPO fine-tuning 在 25k checkpoint 进一步稳定策略，但 50k final 崩溃，说明 checkpoint selection 是必要的。</p>
+<p>这说明 <code>small_corridor</code> 的难点不只是 reward coefficient 不合适，而是长时序探索和多子任务衔接困难。Scripted demonstrations 提供了可学习的动作链，wait jitter 让 BC 不再只记住精确时钟。简单地把两名玩家的角色数据合并给两个模型并没有继续提升表现，说明瓶颈不只是固定角色数据量不足。PPO fine-tuning 在 25k checkpoint 进一步稳定策略，但 50k final 崩溃，说明 checkpoint selection 是必要的。</p>
 <h3>3.5 Partner Robustness</h3>
 <p><img src="../docs/assets/partner_robustness.svg" alt="Partner robustness"></p>
 <p>自博弈成功不代表 partner 泛化成功：</p>
@@ -271,7 +272,7 @@ img {
 <ol>
 <li>最终提交前按课程模板补充课程、队伍、姓名和学号等元信息。</li>
 <li>继续扩大并结构化 <code>random1</code> partner population；当前 3-partner run 仍没有真正修复 held-out partner 崩溃。</li>
-<li>尝试 role-balanced <code>small_corridor</code> demos，减少对固定角色分工的依赖。</li>
+<li>设计更结构化的 <code>small_corridor</code> subtask router，而不是只做简单角色数据合并。</li>
 <li>尝试 distillation，把 router specialists 蒸馏成统一策略。</li>
 <li>单独修复 tomato layout 的 featurizer 问题。</li>
 </ol>

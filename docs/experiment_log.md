@@ -1448,6 +1448,69 @@ Artifacts:
 - `outputs/runs/partner_diversity_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
 - `outputs/runs/baseline_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
 
+## Step 30: Role-Balanced `small_corridor` BC Diagnostic
+
+This step follows the remaining `small_corridor` extension item in
+`docs/project_plan.md`: test whether the perturbed 3-cycle BC specialist is
+limited by fixed player-role data. The code now supports `--role-balanced` in
+`scripts/train_delivery_bc.sh`, which trains each policy on the combined p0 and
+p1 demonstration observations/actions instead of training ego only on p0 and
+alt only on p1.
+
+New config:
+
+- `configs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3.json`
+
+Commands:
+
+```bash
+bash scripts/train_delivery_bc.sh \
+  --config configs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3.json \
+  --demo-path outputs/demos/small_corridor_full_chain_3cycle_jitter3_scripted.json \
+  --run-name small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3 \
+  --epochs 60 \
+  --batch-size 256 \
+  --learning-rate 0.001 \
+  --role-balanced
+
+bash scripts/evaluate.sh outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3 \
+  --episodes 20 \
+  --standard-start \
+  --horizon 400 \
+  --output-name eval_standard_start_h400
+```
+
+BC dataset and validation:
+
+| Run | Source demo | Role-balanced | Training steps per model | Ego val acc | Alt val acc |
+| --- | --- | --- | ---: | ---: | ---: |
+| `small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` | `outputs/demos/small_corridor_full_chain_3cycle_jitter3_scripted.json` | yes | 77018 | 0.9830 | 0.9817 |
+
+Standard-start h400 evaluation:
+
+| Run/checkpoint | Mean soups | Mean sparse reward | Mean episode reward | Soup distribution over 20 deterministic episodes |
+| --- | ---: | ---: | ---: | --- |
+| Fixed-role jitter BC | 2.50 | 50.0 | 93.25 | 3 episodes with 1 soup, 4 with 2 soups, 13 with 3 soups |
+| Role-balanced jitter BC | 2.40 | 48.0 | 90.15 | 3 episodes with 1 soup, 6 with 2 soups, 11 with 3 soups |
+| Checkpoint-selected BC+PPO best | 3.00 | 60.0 | 111.00 | 20 episodes with 3 soups |
+
+Interpretation:
+
+- The role-balanced model has high validation accuracy, but its environment
+  performance is slightly worse than the fixed-role jitter BC baseline.
+- This means the remaining `small_corridor` instability is not solved by simply
+  sharing both role datasets across both policies.
+- Keep this as a negative diagnostic. The best route remains the
+  checkpoint-selected perturbed BC+PPO specialist.
+- A stronger next attempt should be a more structured subtask router or staged
+  controller, not another simple role-balanced BC run.
+
+Artifacts:
+
+- `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3/metrics/bc_summary.json`
+- `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3/metrics/eval_standard_start_h400.json`
+- `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3/metrics/eval_standard_start_h400.csv`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1458,7 +1521,8 @@ The next project direction should move beyond naive multi-layout mixing:
 2. Stronger partner-diversity: the 3-partner fixed-pool run is completed but
    still does not solve held-out robustness; future work should use a larger or
    more structured population method rather than just adding one fixed partner.
-3. If time remains, test role-balanced `small_corridor` demos or a subtask
-   router as an extension beyond the solved 3-soup specialist.
+3. If time remains, test a more structured `small_corridor` subtask router as
+   an extension beyond the solved 3-soup specialist; simple role-balanced BC is
+   already tested and did not improve over fixed-role jitter BC.
 4. Tomato support decision: either avoid tomato maps in this environment stack
    or patch/replace the featurizer before using tomato layouts.

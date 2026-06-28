@@ -430,6 +430,7 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | full-chain small corridor BC | `scripts/collect_delivery_demos.sh --mode full_chain` + `scripts/train_delivery_bc.sh` | Behavior-clone one complete standard-start cooking chain; reaches 1 soup where PPO stays at 0 |
 | 3-cycle full-chain small corridor BC | `scripts/collect_delivery_demos.sh --mode full_chain --full-chain-cycles 3` + `scripts/train_delivery_bc.sh` | Behavior-clone a repeated cooking loop; improves `small_corridor` to 1.90 average soups, though still brittle |
 | perturbed 3-cycle small corridor BC+PPO | `scripts/collect_delivery_demos.sh --full-chain-wait-jitter 3` + `scripts/train_curriculum.sh` | Adds wait perturbations and uses checkpoint selection; reaches 3.00 soups on `small_corridor` at the 25k checkpoint |
+| role-balanced small corridor BC diagnostic | `configs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3.json` + `scripts/train_delivery_bc.sh --role-balanced` | Trains each policy on combined p0/p1 role data; reaches 2.40 soups, so it is a negative diagnostic rather than a new best route |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | random1 held-out seed72 | `configs/baseline_random1_seed72.json` | Add a third `random1` partner for held-out compatibility testing |

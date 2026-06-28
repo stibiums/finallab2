@@ -96,6 +96,12 @@ def split_dataset(
     return train, val
 
 
+def role_balanced_arrays(dataset: dict[str, Any]) -> tuple[np.ndarray, np.ndarray]:
+    obs = np.concatenate([dataset["ego_obs"], dataset["alt_obs"]], axis=0)
+    actions = np.concatenate([dataset["ego_actions"], dataset["alt_actions"]], axis=0)
+    return obs, actions
+
+
 def evaluate_dataset(model: PPO, dataset: TensorDataset, batch_size: int) -> dict[str, float]:
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
     model.policy.set_training_mode(False)
@@ -194,15 +200,22 @@ def train_delivery_bc(config: dict, args: argparse.Namespace) -> Path:
     ego = PPO.load(str(init_run_dir / "models" / "ego"), env=env, device=config["device"])
     alt = PPO.load(str(init_run_dir / "models" / "alt"), env=alt_env, device=config["device"])
 
+    if args.role_balanced:
+        ego_obs, ego_actions = role_balanced_arrays(dataset)
+        alt_obs, alt_actions = ego_obs, ego_actions
+    else:
+        ego_obs, ego_actions = dataset["ego_obs"], dataset["ego_actions"]
+        alt_obs, alt_actions = dataset["alt_obs"], dataset["alt_actions"]
+
     ego_train, ego_val = split_dataset(
-        dataset["ego_obs"],
-        dataset["ego_actions"],
+        ego_obs,
+        ego_actions,
         seed=int(config["seed"]),
         val_fraction=args.val_fraction,
     )
     alt_train, alt_val = split_dataset(
-        dataset["alt_obs"],
-        dataset["alt_actions"],
+        alt_obs,
+        alt_actions,
         seed=int(config["seed"]) + 1,
         val_fraction=args.val_fraction,
     )
@@ -234,14 +247,18 @@ def train_delivery_bc(config: dict, args: argparse.Namespace) -> Path:
     resolved_config["bc_batch_size"] = int(args.batch_size)
     resolved_config["bc_learning_rate"] = float(args.learning_rate)
     resolved_config["bc_val_fraction"] = float(args.val_fraction)
+    resolved_config["bc_role_balanced"] = bool(args.role_balanced)
     save_json(run_dir / "config.resolved.json", resolved_config)
     dataset_summary = {
         "action_counts": dataset["action_counts"],
         "num_steps": dataset["num_steps"],
+        "role_balanced": bool(args.role_balanced),
+        "training_steps_per_model": int(len(ego_actions)),
         "num_successful_episodes": dataset["num_successful_episodes"],
         "source_summary": dataset["source_summary"],
         "ego_observation_shape": list(dataset["ego_obs"].shape),
         "alt_observation_shape": list(dataset["alt_obs"].shape),
+        "training_observation_shape": list(ego_obs.shape),
     }
 
     summary = {
@@ -259,6 +276,8 @@ def train_delivery_bc(config: dict, args: argparse.Namespace) -> Path:
         {
             "run_dir": str(run_dir),
             "dataset_steps": dataset["num_steps"],
+            "role_balanced": bool(args.role_balanced),
+            "training_steps_per_model": int(len(ego_actions)),
             "ego_val_accuracy": ego_summary["final_val"]["accuracy"],
             "alt_val_accuracy": alt_summary["final_val"]["accuracy"],
         },
@@ -278,6 +297,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
     parser.add_argument("--val-fraction", type=float, default=0.2)
+    parser.add_argument(
+        "--role-balanced",
+        action="store_true",
+        help="Train each policy on the combined player-0 and player-1 demo observations/actions.",
+    )
     parser.add_argument("--device", help="Override config device.")
     parser.add_argument("--seed", type=int, help="Override config seed.")
     return parser
