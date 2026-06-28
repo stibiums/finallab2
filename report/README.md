@@ -1,48 +1,25 @@
-# Report Outline
+# Report Deliverables
 
-建议报告题目：
+本目录放课程报告和展示材料的最终入口。
 
-基于奖励塑形的 Overcooked 双智能体协作策略研究
+## Files
 
-## 1. Introduction
+- `final_report.md`: 正式报告 Markdown 初版，可继续转成 PDF 或课程提交格式。
+- `slides.md`: Slidev/Markdown 风格展示稿草案，可直接作为答辩 slides 的文字和图表骨架。
 
-说明 Overcooked 是一个完全合作的双智能体任务，两个智能体需要在有限时间内分工完成取洋葱、下锅、取盘、盛汤、上菜等子任务。本文关注 reward shaping 对协作学习效率和最终策略行为的影响。
+## Source Materials
 
-## 2. Method
+- `../docs/report_draft.md`: 报告正文草稿。
+- `../docs/report_materials.md`: 报告表格、demo manifest 和结论摘要。
+- `../docs/assets/`: 已生成的 SVG 图表。
+- `../docs/experiment_log.md`: 完整实验审计记录。
 
-- Environment: Overcooked `simple` layout.
-- Algorithm: PPO self-play with two learning agents.
-- Observation: Overcooked-AI featurized state.
-- Action space: six discrete actions: move up/down/left/right, stay, interact.
-- Reward variants:
-  - no shaping
-  - default intermediate shaping
-  - additional distance shaping
+## Regenerate Figures
 
-## 3. Experiments
+Run from the project root:
 
-建议至少跑：
+```bash
+python scripts/build_report_assets.py
+```
 
-- `no_shaping_simple`
-- `baseline_simple`
-- `distance_shaping_simple`
-
-每个实验保存训练曲线、模型、评估 JSON/CSV 和 GIF。
-
-## 4. Results
-
-推荐图表：
-
-- episode reward training curve
-- mean sparse reward / soups delivered table
-- behavior GIF screenshots
-- failed coordination examples
-
-## 5. Discussion
-
-可以重点分析：
-
-- 稀疏奖励下为什么探索难
-- 中间奖励如何帮助形成子任务链条
-- 过强的 dense reward 是否会造成局部最优
-- 两个 PPO agent 同时学习时的非平稳性
+The generated SVG assets are tracked under `docs/assets/`.
