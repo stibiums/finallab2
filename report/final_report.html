@@ -266,6 +266,7 @@ img {
 <li>当前最强方案是 specialist router，不是单一神经策略的跨地图泛化。</li>
 <li><code>small_corridor</code> 的成功依赖 scripted demonstrations 和 checkpoint selection，不能表述为 PPO 从零探索成功。</li>
 <li><code>random1</code> 在 held-out partner 下明显崩溃；两 partner 和三 partner 的 partner-aware training 都只改善部分 seen partners，mixed fixed + learned partner 版本更差；partner-id conditioning 能把四个已知 partner 平均提高到 2.34、最低提高到 0.80，但遇到未知 seed76 仍为 0。</li>
+<li><code>small_corridor</code> 的简单 subtask router 和 role-specific router 都不能超过当前 best checkpoint；delivery BC 只对 BC-only 策略有很小救援作用。</li>
 <li>Tomato layouts 当前因 <code>KeyError: &#x27;tomato&#x27;</code> 没有纳入主结果，应作为环境栈问题单独说明。</li>
 <li>PPO fine-tuning 可能非单调，最终 checkpoint 不一定代表最佳策略。</li>
 </ol>
@@ -276,7 +277,7 @@ img {
 <ol>
 <li>最终提交前按课程模板补充课程、队伍、姓名和学号等元信息。</li>
 <li>继续研究 <code>random1</code> partner robustness；partner-id conditioning 已经比无条件 partner pool 更好，但 seed76 unknown probe 仍为 0，后续需要 unknown-partner inference、held-out validation 或 HARL/MAPPO/HAPPO 风格算法。</li>
-<li>设计 learned option routing 或更结构化的 <code>small_corridor</code> pickup/delivery controller，而不是只做手写 held-soup switch。</li>
+<li>设计 learned option routing 或更结构化的 <code>small_corridor</code> pickup/delivery controller；当前 held-soup 和 role-specific 手写规则都不足以超过 best checkpoint。</li>
 <li>尝试 distillation，把 router specialists 蒸馏成统一策略。</li>
 <li>单独修复 tomato layout 的 featurizer 问题。</li>
 </ol>

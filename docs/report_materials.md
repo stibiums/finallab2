@@ -67,6 +67,7 @@ Report figure:
 | `small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` | 2.40 | 48.0 | Training both policies on combined p0/p1 role data does not improve over fixed-role jitter BC. |
 | `small_corridor_subtask_router_jitter_bc_delivery` | 2.60 | 52.0 | Held-soup switch to delivery BC gives a small BC-only rescue. |
 | `small_corridor_subtask_router_best_bc_ppo_delivery` | 2.45 | 49.0 | The same switch hurts the checkpoint-selected BC+PPO policy. |
+| Role-specific subtask router variants | 2.50 to 3.00 | 50.0 to 60.0 | `held_soup_alt` reproduces held-soup routing, while `held_soup_ego` never switches; role gating does not improve the best policy. |
 | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` best at 25k | 3.00 | 60.0 | Best checkpoint solves the 3-soup evaluation horizon. |
 | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` final 50k | 0.85 | 17.0 | Final checkpoint collapses; checkpoint selection matters. |
 
@@ -76,6 +77,10 @@ Evidence:
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3/metrics/eval_standard_start_h400.json`
 - `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery/metrics/subtask_router_eval.json`
 - `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder/metrics/subtask_router_eval.json`
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/metrics/train_summary.json`
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/metrics/curriculum_eval.csv`
 

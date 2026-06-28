@@ -1573,6 +1573,69 @@ Artifacts:
 - `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval.json`
 - `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval_episodes.csv`
 
+## Step 35: Role-Specific `small_corridor` Subtask Router Diagnostic
+
+This step extends Step 31 with a more structured switch rule. Instead of
+switching to the delivery specialist whenever any player holds soup, the router
+can now switch only when the ego player holds soup, only when the partner holds
+soup, or when physical player 0/1 holds soup. This tests whether the delivery
+BC should be role-specific.
+
+New switch modes in `evaluate_subtask_router.py`:
+
+- `held_soup_ego`
+- `held_soup_alt`
+- `held_soup_p0`
+- `held_soup_p1`
+
+New configs:
+
+- `configs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder.json`
+- `configs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder.json`
+- `configs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder.json`
+- `configs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder.json`
+
+Commands:
+
+```bash
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder.json
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder.json
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder.json
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder.json
+```
+
+Standard-start h400 results:
+
+| Run | Base policy | Switch mode | Mean soups | Mean sparse reward | Mean episode reward | Mean base steps | Mean delivery steps |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Fixed-role jitter BC baseline | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | none | 2.50 | 50.0 | 93.25 | 400.00 | 0.00 |
+| Jitter BC role-specific router | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `held_soup_alt` | 2.60 | 52.0 | 97.95 | 334.25 | 65.75 |
+| Jitter BC ego-holder router | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `held_soup_ego` | 2.50 | 50.0 | 93.25 | 400.00 | 0.00 |
+| Current best BC+PPO baseline | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | none | 3.00 | 60.0 | 111.00 | 400.00 | 0.00 |
+| Best BC+PPO role-specific router | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `held_soup_alt` | 2.45 | 49.0 | 96.40 | 322.65 | 77.35 |
+| Best BC+PPO ego-holder router | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `held_soup_ego` | 3.00 | 60.0 | 111.00 | 400.00 | 0.00 |
+
+Interpretation:
+
+- In these `small_corridor` policies, soup is effectively held by the partner
+  side during delivery. Therefore `held_soup_alt` reproduces the original
+  `held_soup` behavior, while `held_soup_ego` never switches and matches the
+  base policy.
+- Role-specific gating explains the Step 31 result but does not improve it.
+  The delivery BC gives a tiny rescue to the BC-only jitter policy, but still
+  hurts the checkpoint-selected BC+PPO policy.
+- A useful next router would need a genuinely different option or gating
+  signal: learned confidence, uncertainty/rollback, or explicit pickup and
+  delivery options trained for both roles. Simple holder-role routing is not
+  enough.
+
+Artifacts:
+
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder/metrics/subtask_router_eval.json`
+
 ## Step 32: Mixed Fixed + Learned `random1` Partner Population
 
 This step tests the remaining `random1` population idea from

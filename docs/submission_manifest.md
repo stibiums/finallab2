@@ -77,6 +77,7 @@ failure.
 | Unknown `random1` partner probe | `outputs/runs/baseline_random1_seed76` |
 | Role-balanced `small_corridor` diagnostic | `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` |
 | `small_corridor` subtask-router diagnostic | `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery` |
+| Role-specific `small_corridor` subtask-router diagnostic | `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder`, `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder` |
 
 ## Demo Assets
 
@@ -212,6 +213,9 @@ evaluation, and four-known-partner matrix metrics.
 After the unknown `random1` partner probe was added, the dry run package
 includes `baseline_random1_seed76` train/default metrics plus the conditioned
 unknown-partner assumption sweep.
+After the role-specific `small_corridor` subtask-router diagnostic was added,
+the dry run package includes the four holder-specific router variants and their
+metrics/traces.
 
 The generated demo-video draft wrote successfully to
 `report/demo_video_draft.mp4`; `ffprobe` reported duration `437.162760`

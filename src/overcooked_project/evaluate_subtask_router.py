@@ -34,6 +34,14 @@ def has_held_soup(state) -> bool:
     return any(held_object_name(player) == "soup" for player in state.players)
 
 
+def soup_holder_indices(state) -> set[int]:
+    return {
+        player_idx
+        for player_idx, player in enumerate(state.players)
+        if held_object_name(player) == "soup"
+    }
+
+
 def has_ready_soup_object(state) -> bool:
     for obj in state.objects.values():
         if str(getattr(obj, "name", "")) != "soup":
@@ -47,11 +55,21 @@ def has_ready_soup_object(state) -> bool:
     return False
 
 
-def select_route(state, switch_mode: str) -> str:
+def select_route(state, switch_mode: str, ego_agent_idx: int = 0) -> str:
+    soup_holders = soup_holder_indices(state)
+    alt_agent_idx = 1 if ego_agent_idx == 0 else 0
     if switch_mode == "held_soup":
         return "delivery" if has_held_soup(state) else "base"
     if switch_mode == "held_or_ready_soup":
         return "delivery" if has_held_soup(state) or has_ready_soup_object(state) else "base"
+    if switch_mode == "held_soup_ego":
+        return "delivery" if ego_agent_idx in soup_holders else "base"
+    if switch_mode == "held_soup_alt":
+        return "delivery" if alt_agent_idx in soup_holders else "base"
+    if switch_mode == "held_soup_p0":
+        return "delivery" if 0 in soup_holders else "base"
+    if switch_mode == "held_soup_p1":
+        return "delivery" if 1 in soup_holders else "base"
     raise ValueError(f"Unsupported switch_mode: {switch_mode}")
 
 
@@ -93,7 +111,7 @@ def run_subtask_router_episode(
     while not done and steps < max_steps:
         before = state_summary(env) if record_trace else None
         state = env.unwrapped.base_env.state
-        route = select_route(state, switch_mode)
+        route = select_route(state, switch_mode, ego_agent_idx=int(env.unwrapped.ego_agent_idx))
         ego_obs, alt_obs = current_observations(env)
         if route == "delivery":
             ego_model, alt_model = delivery_ego, delivery_alt
@@ -277,7 +295,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--delivery-run-dir", help="Override delivery-specialist run directory.")
     parser.add_argument("--output-dir", help="Override output directory.")
     parser.add_argument("--run-name", help="Override run name.")
-    parser.add_argument("--switch-mode", choices=["held_soup", "held_or_ready_soup"])
+    parser.add_argument(
+        "--switch-mode",
+        choices=[
+            "held_soup",
+            "held_or_ready_soup",
+            "held_soup_ego",
+            "held_soup_alt",
+            "held_soup_p0",
+            "held_soup_p1",
+        ],
+    )
     parser.add_argument("--episodes", type=int)
     parser.add_argument("--horizon", type=int)
     parser.add_argument("--stochastic", action="store_true")

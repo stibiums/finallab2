@@ -86,6 +86,7 @@ PPO baseline → failure analysis → specialists → layout router
 - Wait-jittered BC：平均 2.50 soups
 - Role-balanced BC：平均 2.40 soups，未超过固定分工 BC
 - Subtask router：BC-only 到 2.60，但会把最佳 BC+PPO 降到 2.45
+- Role-specific router：只解释了 delivery 多由 partner 持汤触发，未超过最佳策略
 - Perturbed BC + PPO 25k checkpoint：稳定 3.00 soups
 - PPO 50k final：退化到 0.85 soups
 

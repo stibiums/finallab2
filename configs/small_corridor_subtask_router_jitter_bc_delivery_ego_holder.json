@@ -1,0 +1,14 @@
+{
+  "run_name": "small_corridor_subtask_router_jitter_bc_delivery_ego_holder",
+  "base_run_dir": "outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_from_v3",
+  "delivery_run_dir": "outputs/runs/small_corridor_delivery_bc_from_v3",
+  "output_dir": "outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder",
+  "layout_name": "small_corridor",
+  "horizon": 400,
+  "max_steps": 400,
+  "episodes": 20,
+  "deterministic_eval": true,
+  "standard_start": true,
+  "switch_mode": "held_soup_ego",
+  "output_name": "subtask_router_eval"
+}

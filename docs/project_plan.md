@@ -395,7 +395,7 @@ The next concrete work item is:
 2. Record the required demo video using `report/demo_script.md`, or use the generated `report/demo_video_draft.mp4` if a GIF-based demo artifact is acceptable.
 3. Run `python scripts/check_submission_ready.py --name 学号+姓名`, then `python scripts/package_submission.py --name 学号+姓名` after replacing the archive stem with the real student/name string, and include a demo video with `--demo-video` if available.
 4. If more experiment time remains, extend the `random1` partner-conditioned result beyond the seed76 probe: add unknown-partner inference, larger held-out partner validation, stronger conditioning/regularization, or MAPPO/HAPPO/HARL-style heterogeneous-agent training.
-5. If time remains, test a learned or more structured `small_corridor` subtask router with explicit pickup/delivery options. The simple role-balanced BC diagnostic is completed, and the first hand-written held-soup router only helps BC-only slightly while hurting the current best BC+PPO route.
+5. If time remains, move beyond hand-written `small_corridor` subtask rules. Role-balanced BC, held-soup routing, ready-soup routing, and role-specific held-soup routing are all completed; only the BC-only route gets a tiny rescue, while the current best BC+PPO route is hurt or unchanged. A future attempt needs learned gating, confidence checks, or separately trained pickup/delivery options for both roles.
 
 After each new attempt, decide whether to:
 
