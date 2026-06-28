@@ -296,6 +296,13 @@ def markdown_to_html(markdown: str) -> str:
             idx += 1
             continue
 
+        if stripped.startswith("<!--") and stripped.endswith("-->"):
+            flush_paragraph(parts, paragraph)
+            flush_list(parts, list_tag, list_items)
+            list_tag = None
+            idx += 1
+            continue
+
         if stripped.startswith("|") and idx + 1 < len(lines) and is_table_separator(lines[idx + 1]):
             flush_paragraph(parts, paragraph)
             flush_list(parts, list_tag, list_items)

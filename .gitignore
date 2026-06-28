@@ -33,3 +33,4 @@ report/*.log
 report/*.out
 report/*.synctex.gz
 report/*.toc
+report/submission_metadata.json

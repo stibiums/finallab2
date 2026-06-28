@@ -1240,6 +1240,47 @@ with size 6.3 MB. A zip-content check confirmed that it contains:
 Conclusion: the final archive can now be generated reproducibly once the real
 `学号+姓名` archive stem and optional demo video path are known.
 
+## Step 26: Submission Metadata Helper
+
+This step removes the last report-editing guesswork around real course/team
+metadata without committing fake personal information.
+
+New files:
+
+- `scripts/apply_submission_metadata.py`
+- `report/submission_metadata.example.json`
+
+Behavior:
+
+- The real `report/submission_metadata.json` is gitignored, so personal
+  information does not get committed accidentally.
+- The script validates that the JSON no longer contains placeholder text such as
+  `填写`.
+- It inserts or replaces an invisible-marker metadata block in
+  `report/final_report.md` and `report/slides.md`.
+- `scripts/build_report_exports.py` now skips HTML comment marker lines so the
+  metadata replacement markers do not appear in exported HTML/PDF.
+- `--export` can regenerate report exports after applying real metadata.
+
+Example flow:
+
+```bash
+cp report/submission_metadata.example.json report/submission_metadata.json
+# Edit report/submission_metadata.json with real course/team/name/student-id data.
+python scripts/apply_submission_metadata.py --metadata report/submission_metadata.json --export
+```
+
+Verification:
+
+```bash
+python -m py_compile scripts/apply_submission_metadata.py scripts/build_report_exports.py
+python scripts/apply_submission_metadata.py --metadata tmp/submission_metadata_test.json --dry-run
+```
+
+Conclusion: final identity metadata is now ready to apply as soon as the real
+submission information is available, without adding placeholders to the current
+report.
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:

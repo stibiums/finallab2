@@ -25,6 +25,9 @@
 - Code/config/scripts: tracked in `src/`, `configs/`, and `scripts/`.
 - Models/metrics/GIF demos: stored under selected `outputs/runs/` directories,
   listed in `../docs/submission_manifest.md`.
+- Optional metadata helper: fill `submission_metadata.json` from
+  `submission_metadata.example.json`, then run
+  `python scripts/apply_submission_metadata.py --metadata report/submission_metadata.json --export`.
 - Manual remaining item: record the screen-demo video and rename the final
   archive to the required `学号+姓名` format.
 

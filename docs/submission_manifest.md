@@ -52,6 +52,7 @@ For non-graduating students, the prompt lists the deadline as
 | Demo visuals | selected `outputs/runs/*/demo/*.gif` paths below | Ready locally |
 | Demo recording | `report/demo_script.md` gives the recording plan | Manual screen recording still needed if the teacher strictly requires video |
 | Archive helper | `scripts/package_submission.py` | Ready; dry-run and test zip verified |
+| Identity metadata helper | `scripts/apply_submission_metadata.py`, `report/submission_metadata.example.json` | Ready; use only with real course/member data |
 
 ## Recommended Runs To Include
 
@@ -104,6 +105,14 @@ python scripts/build_report_assets.py
 python scripts/build_report_exports.py
 ```
 
+Apply real course/team/name/student-id metadata before final export:
+
+```bash
+cp report/submission_metadata.example.json report/submission_metadata.json
+# Edit report/submission_metadata.json with real information first.
+python scripts/apply_submission_metadata.py --metadata report/submission_metadata.json --export
+```
+
 Dry-run the final package checklist:
 
 ```bash
@@ -150,6 +159,8 @@ state is up to date unless the branch is pushed.
 Packaging verification performed on 2026-06-28:
 
 ```bash
+python -m py_compile scripts/apply_submission_metadata.py scripts/package_submission.py
+python scripts/apply_submission_metadata.py --metadata tmp/submission_metadata_test.json --dry-run
 python -m py_compile scripts/package_submission.py
 python scripts/package_submission.py --name submission_dry_run --dry-run
 python scripts/package_submission.py --name submission_dry_run --output-dir tmp/package_test --force
@@ -162,8 +173,9 @@ code, model, demo, and router-metric paths checked after creation.
 ## Manual Items Before Final Upload
 
 1. Rename the final archive to the required `学号+姓名` format.
-2. Add course/team/name/student-id metadata to the report title area if the
-   teacher requires it or provides a template.
+2. Add course/team/name/student-id metadata with
+   `scripts/apply_submission_metadata.py` if the teacher requires it or provides
+   a template.
 3. Record the demo video using `report/demo_script.md`, or confirm that GIF
    demos plus slides are acceptable.
 4. Decide whether to include the large `external/PantheonRL` submodule in the
