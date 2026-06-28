@@ -58,6 +58,8 @@ def load_bc_dataset(demo_path: str | Path) -> dict[str, Any]:
                 "config",
                 "mode",
                 "full_chain_cycles",
+                "full_chain_wait_jitter",
+                "seed",
                 "episodes",
                 "max_steps",
                 "successes",

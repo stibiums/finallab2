@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from pathlib import Path
+from random import Random
 from typing import Any
 
 import gym
@@ -17,9 +18,15 @@ def action_index(action) -> int:
     return int(Action.ACTION_TO_INDEX[action])
 
 
-def build_full_chain_action_plan(cycles: int = 1) -> list[tuple[int, int]]:
+def build_full_chain_action_plan(
+    cycles: int = 1,
+    wait_jitter: int = 0,
+    rng: Random | None = None,
+) -> list[tuple[int, int]]:
     if cycles < 1:
         raise ValueError("cycles must be at least 1.")
+    if wait_jitter < 0:
+        raise ValueError("wait_jitter must be non-negative.")
 
     n, s, e, w, stay, interact = (
         Direction.NORTH,
@@ -29,6 +36,12 @@ def build_full_chain_action_plan(cycles: int = 1) -> list[tuple[int, int]]:
         Action.STAY,
         Action.INTERACT,
     )
+    rng = rng or Random()
+
+    def jitter_wait() -> list:
+        if wait_jitter == 0:
+            return []
+        return [stay] * rng.randint(0, wait_jitter)
 
     def p0_trip(return_after: bool) -> list:
         actions = [w, w, w, s, s] + [e] * 8 + [s, interact]
@@ -45,7 +58,16 @@ def build_full_chain_action_plan(cycles: int = 1) -> list[tuple[int, int]]:
         actions = [w, w, n, interact, e, e, e, s]
         while len(actions) < p0_cycle_len:
             actions.append(stay)
-        return actions + [s] + [stay] * 25 + [interact] * 5 + [w] * 9 + [s, interact]
+        return (
+            actions
+            + jitter_wait()
+            + [s]
+            + [stay] * 25
+            + [interact] * 5
+            + jitter_wait()
+            + [w] * 9
+            + [s, interact]
+        )
 
     def later_cycle_p0() -> list:
         return [w] * 9 + [n, n] + [e] * 3 + [n, interact] + p0_trip(
@@ -55,6 +77,7 @@ def build_full_chain_action_plan(cycles: int = 1) -> list[tuple[int, int]]:
     def later_cycle_p1() -> list:
         return (
             [stay] * 90
+            + jitter_wait()
             + [e] * 9
             + [n, n]
             + [w] * 3
@@ -62,6 +85,7 @@ def build_full_chain_action_plan(cycles: int = 1) -> list[tuple[int, int]]:
             + [e] * 3
             + [s, s]
             + [interact] * 5
+            + jitter_wait()
             + [w] * 9
             + [s, interact]
         )
@@ -102,14 +126,29 @@ def scripted_action_for_player(player) -> int:
     return action_index(Action.INTERACT)
 
 
-def collect_episode(env, max_steps: int, mode: str, full_chain_cycles: int) -> dict[str, Any]:
+def collect_episode(
+    env,
+    max_steps: int,
+    mode: str,
+    full_chain_cycles: int,
+    full_chain_wait_jitter: int,
+    rng: Random | None,
+) -> dict[str, Any]:
     env.unwrapped.multi_reset()
     initial_state = state_summary(env)
     rows = []
     total_reward = 0.0
     sparse_reward = 0.0
     action_counts = Counter()
-    full_chain_plan = build_full_chain_action_plan(full_chain_cycles) if mode == "full_chain" else None
+    full_chain_plan = (
+        build_full_chain_action_plan(
+            cycles=full_chain_cycles,
+            wait_jitter=full_chain_wait_jitter,
+            rng=rng,
+        )
+        if mode == "full_chain"
+        else None
+    )
     target_sparse_reward = 20.0 * full_chain_cycles if mode == "full_chain" else 20.0
 
     for step in range(max_steps):
@@ -179,6 +218,8 @@ def collect_demos(config_path: str | Path, episodes: int, max_steps: int, output
         output_path=output_path,
         mode="delivery",
         full_chain_cycles=1,
+        full_chain_wait_jitter=0,
+        seed=0,
     )
 
 
@@ -189,13 +230,23 @@ def collect_scripted_demos(
     output_path: str | Path,
     mode: str,
     full_chain_cycles: int,
+    full_chain_wait_jitter: int,
+    seed: int,
 ):
     register_envs()
     config = load_config(config_path)
     validate_mode_config(config, mode)
     env = gym.make(config["env_id"], **env_config_from_config(config))
+    rng = Random(seed)
     demos = [
-        collect_episode(env, max_steps=max_steps, mode=mode, full_chain_cycles=full_chain_cycles)
+        collect_episode(
+            env,
+            max_steps=max_steps,
+            mode=mode,
+            full_chain_cycles=full_chain_cycles,
+            full_chain_wait_jitter=full_chain_wait_jitter,
+            rng=rng,
+        )
         for _ in range(episodes)
     ]
     env.close()
@@ -205,6 +256,8 @@ def collect_scripted_demos(
         "config": str(config_path),
         "mode": mode,
         "full_chain_cycles": full_chain_cycles if mode == "full_chain" else None,
+        "full_chain_wait_jitter": full_chain_wait_jitter if mode == "full_chain" else None,
+        "seed": seed,
         "episodes": episodes,
         "max_steps": max_steps,
         "successes": len(successes),
@@ -220,6 +273,8 @@ def collect_scripted_demos(
             "output_path": str(output_path),
             "mode": mode,
             "full_chain_cycles": full_chain_cycles if mode == "full_chain" else None,
+            "full_chain_wait_jitter": full_chain_wait_jitter if mode == "full_chain" else None,
+            "seed": seed,
             "episodes": episodes,
             "successes": summary["successes"],
             "success_rate": summary["success_rate"],
@@ -248,6 +303,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Number of standard-start soup cycles to script when --mode full_chain.",
     )
     parser.add_argument(
+        "--full-chain-wait-jitter",
+        type=int,
+        default=0,
+        help="Maximum random extra stay actions inserted at safe sync points for full_chain demos.",
+    )
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for scripted demo perturbations.")
+    parser.add_argument(
         "--output",
         default="outputs/demos/small_corridor_delivery_scripted.json",
         help="Output JSON path for scripted demonstrations.",
@@ -264,6 +326,8 @@ def main() -> None:
         output_path=args.output,
         mode=args.mode,
         full_chain_cycles=args.full_chain_cycles,
+        full_chain_wait_jitter=args.full_chain_wait_jitter,
+        seed=args.seed,
     )
 
 

@@ -221,6 +221,36 @@ bash scripts/train_curriculum.sh configs/baseline_small_corridor.json \
   --eval-episodes 20
 ```
 
+Collect perturbed 3-cycle demos and checkpoint-select a PPO fine-tune:
+
+```bash
+ENV_PREFIX=/Volumes/data/conda_envs/overcooked-marl bash scripts/collect_delivery_demos.sh \
+  --config configs/baseline_small_corridor.json \
+  --mode full_chain \
+  --full-chain-cycles 3 \
+  --full-chain-wait-jitter 3 \
+  --seed 91 \
+  --episodes 100 \
+  --max-steps 420 \
+  --output outputs/demos/small_corridor_full_chain_3cycle_jitter3_scripted.json
+
+ENV_PREFIX=/Volumes/data/conda_envs/overcooked-marl bash scripts/train_delivery_bc.sh \
+  --config configs/baseline_small_corridor.json \
+  --init-run-dir outputs/runs/small_corridor_structured_shaping_v3 \
+  --demo-path outputs/demos/small_corridor_full_chain_3cycle_jitter3_scripted.json \
+  --run-name small_corridor_full_chain_3cycle_jitter3_bc_from_v3 \
+  --epochs 60 \
+  --batch-size 256 \
+  --learning-rate 0.001
+
+ENV_PREFIX=/Volumes/data/conda_envs/overcooked-marl bash scripts/train_curriculum.sh configs/baseline_small_corridor.json \
+  --run-name small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune \
+  --init-run-dir outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_from_v3 \
+  --timesteps 50000 \
+  --eval-interval 25000 \
+  --eval-episodes 20
+```
+
 Train held-out hard-layout partner seeds:
 
 ```bash
@@ -235,7 +265,7 @@ You can override common options:
 bash scripts/train.sh configs/baseline_simple.json --run-name baseline_seed11 --seed 11 --timesteps 200000
 ```
 
-All shell scripts use `conda run --no-capture-output` and `PYTHONUNBUFFERED=1`, so training logs stream live instead of being buffered until the process exits.
+All shell scripts use `conda run --no-capture-output` and `PYTHONUNBUFFERED=1`, so training logs stream live instead of being buffered until the process exits. By default they use `ENV_NAME=overcooked-marl`; set `ENV_PREFIX=/Volumes/data/conda_envs/overcooked-marl` if conda cannot find a writable named-env directory.
 
 ## Evaluation And Demo
 
@@ -341,6 +371,19 @@ bash scripts/evaluate_router.sh configs/router_simple_random0.json \
   --output-name router_eval
 ```
 
+Evaluate the current strongest onion-layout router, using the checkpoint-selected perturbed `small_corridor` BC+PPO specialist:
+
+```bash
+ENV_PREFIX=/Volumes/data/conda_envs/overcooked-marl bash scripts/evaluate_router.sh configs/router_simple_random0.json \
+  --route simple=outputs/runs/curriculum_simple_random0 \
+  --route random0=outputs/runs/baseline_random0_long_seed52 \
+  --route random1=outputs/runs/baseline_random1 \
+  --route unident_s=outputs/runs/baseline_unident_s \
+  --route small_corridor=outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune \
+  --output-dir outputs/runs/router_onion_layouts_with_small_corridor_jitter3_bc_ppo \
+  --output-name router_eval
+```
+
 Run hard-layout partner-robustness matrices:
 
 ```bash
@@ -376,6 +419,7 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | delivery behavior cloning | `scripts/train_delivery_bc.sh` | Train PPO policy heads from scripted delivery observations/actions; solves delivery warm-start but not full standard start |
 | full-chain small corridor BC | `scripts/collect_delivery_demos.sh --mode full_chain` + `scripts/train_delivery_bc.sh` | Behavior-clone one complete standard-start cooking chain; reaches 1 soup where PPO stays at 0 |
 | 3-cycle full-chain small corridor BC | `scripts/collect_delivery_demos.sh --mode full_chain --full-chain-cycles 3` + `scripts/train_delivery_bc.sh` | Behavior-clone a repeated cooking loop; improves `small_corridor` to 1.90 average soups, though still brittle |
+| perturbed 3-cycle small corridor BC+PPO | `scripts/collect_delivery_demos.sh --full-chain-wait-jitter 3` + `scripts/train_curriculum.sh` | Adds wait perturbations and uses checkpoint selection; reaches 3.00 soups on `small_corridor` at the 25k checkpoint |
 | random1 expert | `configs/baseline_random1.json` | Add a successful `random1` specialist for router coverage |
 | random1 held-out seed | `configs/baseline_random1_seed71.json` | Test whether `random1` self-play success survives partner mismatch |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |
