@@ -24,7 +24,7 @@ Key results so far:
 | hard-layout partner robustness | mixed | `unident_s` is robust, `random1` remains brittle under held-out partners, and `random0` is asymmetric. A two-partner `random1` diversity run improves in-pool compatibility but not true held-out robustness. |
 | tomato layouts | blocked by `KeyError: 'tomato'` | Treat tomato support as an environment issue, not a policy result. |
 
-The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now final submission polish: the report/slides are exported, the compact packaging script is verified, metadata injection and preflight checks are scripted, and the remaining manual item is real course/member information plus an actual demo recording if required.
+The main bottleneck is no longer whether the baseline can run or whether specialists are useful. The bottleneck is now final submission polish: the report/slides are exported, metadata injection, demo-video draft generation, preflight checks, and compact packaging are scripted. The generated demo-video draft exists locally at `report/demo_video_draft.mp4`. The remaining manual item is real course/member information plus either a real screen recording or acceptance of the generated demo video.
 
 ## Project Goal
 
@@ -355,6 +355,7 @@ Recommended figures/tables:
 | Submission packager | `scripts/package_submission.py` |
 | Metadata helper | `scripts/apply_submission_metadata.py`, `report/submission_metadata.example.json` |
 | Submission preflight | `scripts/check_submission_ready.py` |
+| Demo video draft | `scripts/build_demo_video.py`, `report/demo_video_draft.mp4` generated and verified locally |
 | Reward shaping ablation table | `outputs/runs/*/metrics/eval_metrics.json` |
 | Cross-layout matrix | `outputs/runs/*/metrics/zero_shot_layouts.csv` |
 | Router coverage table | `outputs/runs/router_*/metrics/router_eval.csv` |
@@ -388,7 +389,7 @@ For every new experiment:
 The next concrete work item is:
 
 1. Fill `report/submission_metadata.json` from `report/submission_metadata.example.json`, then run `scripts/apply_submission_metadata.py --export` if the teacher requires course/team/name/student-id metadata; current report intentionally avoids fake placeholders.
-2. Record the required demo video using `report/demo_script.md`; GIF demos are ready, but the course prompt asks for a complete screen recording.
+2. Record the required demo video using `report/demo_script.md`, or use the generated `report/demo_video_draft.mp4` if a GIF-based demo artifact is acceptable.
 3. Run `python scripts/check_submission_ready.py --name 学号+姓名`, then `python scripts/package_submission.py --name 学号+姓名` after replacing the archive stem with the real student/name string, and include a demo video with `--demo-video` if available.
 4. If time remains after submission packaging, extend `random1` partner-aware training to a larger partner population; the two-partner run improved in-pool compatibility but still scored only 0.45 soups with held-out seed72.
 5. If time remains, test role-balanced `small_corridor` demos or a subtask router as an extension beyond the now-successful 3-soup specialist.

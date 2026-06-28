@@ -15,6 +15,7 @@
 - Final submission checklist: [docs/submission_manifest.md](docs/submission_manifest.md).
 - Report SVG assets: [docs/assets](docs/assets).
 - Final report/slides exports and demo recording script: [report](report).
+- Demo video draft: `report/demo_video_draft.mp4`, rebuild with `python scripts/build_demo_video.py --force`.
 - Submission archive helper: `python scripts/package_submission.py --name 学号+姓名 --dry-run`.
 - Submission preflight helper: `python scripts/check_submission_ready.py --name 学号+姓名`.
 - Optional metadata helper: `python scripts/apply_submission_metadata.py --metadata report/submission_metadata.json --export`.

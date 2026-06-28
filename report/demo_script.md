@@ -6,6 +6,16 @@ This is a suggested script for the final demo recording required by
 `组队课题.pdf`. The goal is to show both how to start the project and what the
 final policies achieve.
 
+A draft video has been generated from the GIF demos. It can be rebuilt with:
+
+```bash
+python scripts/build_demo_video.py --force
+```
+
+This creates `report/demo_video_draft.mp4`. It is useful as a demo artifact or
+recording scaffold, but a real screen recording is still preferable if the
+teacher strictly requires live terminal interaction.
+
 ## Recording Outline
 
 Target length: 5-8 minutes.

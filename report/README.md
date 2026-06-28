@@ -25,10 +25,13 @@
 - Code/config/scripts: tracked in `src/`, `configs/`, and `scripts/`.
 - Models/metrics/GIF demos: stored under selected `outputs/runs/` directories,
   listed in `../docs/submission_manifest.md`.
+- Demo video draft: `demo_video_draft.mp4` has been generated locally with
+  `python scripts/build_demo_video.py --force`.
 - Optional metadata helper: fill `submission_metadata.json` from
   `submission_metadata.example.json`, then run
   `python scripts/apply_submission_metadata.py --metadata report/submission_metadata.json --export`.
-- Manual remaining item: record the screen-demo video and rename the final
+- Manual remaining item: add real identity metadata if required, record a live
+  screen-demo if the generated draft is not accepted, and rename the final
   archive to the required `学号+姓名` format.
 
 ## Build Submission Archive

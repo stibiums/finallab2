@@ -51,6 +51,7 @@ For non-graduating students, the prompt lists the deadline as
 | Metrics | selected `outputs/runs/*/metrics/` paths below | Ready locally |
 | Demo visuals | selected `outputs/runs/*/demo/*.gif` paths below | Ready locally |
 | Demo recording | `report/demo_script.md` gives the recording plan | Manual screen recording still needed if the teacher strictly requires video |
+| Demo video draft | `scripts/build_demo_video.py` -> `report/demo_video_draft.mp4` | Generated and verified locally from GIF demos |
 | Archive helper | `scripts/package_submission.py` | Ready; dry-run and test zip verified |
 | Identity metadata helper | `scripts/apply_submission_metadata.py`, `report/submission_metadata.example.json` | Ready; use only with real course/member data |
 
@@ -96,6 +97,12 @@ Run a smoke test:
 
 ```bash
 bash scripts/smoke_test.sh
+```
+
+Build a demo video draft from the GIF demos:
+
+```bash
+python scripts/build_demo_video.py --force
 ```
 
 Regenerate report figures and exports:
@@ -168,6 +175,10 @@ Packaging verification performed on 2026-06-28:
 ```bash
 python -m py_compile scripts/apply_submission_metadata.py scripts/package_submission.py
 python -m py_compile scripts/check_submission_ready.py
+python -m py_compile scripts/build_demo_video.py
+python scripts/build_demo_video.py --gif-seconds 2 --output tmp/demo_video_test.mp4 --force
+python scripts/build_demo_video.py --force
+ffprobe -v error -show_entries format=duration,size -of default=nw=1 report/demo_video_draft.mp4
 python scripts/check_submission_ready.py --name 学号+姓名
 python scripts/apply_submission_metadata.py --metadata tmp/submission_metadata_test.json --dry-run
 python -m py_compile scripts/package_submission.py
@@ -178,11 +189,19 @@ python scripts/package_submission.py --name submission_dry_run --output-dir tmp/
 The compact test archive wrote successfully to
 `tmp/package_test/submission_dry_run.zip` and contained the required report,
 code, model, demo, and router-metric paths checked after creation.
+After the demo-video draft was generated, the test archive was rebuilt and
+confirmed to include `submission_dry_run/report/demo_video_draft.mp4`.
+
+The generated demo-video draft wrote successfully to
+`report/demo_video_draft.mp4`; `ffprobe` reported duration `437.162760`
+seconds and size `2411213` bytes. A frame extraction check also confirmed that
+the MP4 contains rendered Overcooked demo footage.
 
 Current expected preflight status before real identity/video are provided:
 required artifacts pass, while the script warns about the placeholder archive
-name, missing real `report/submission_metadata.json`, missing demo video path,
-and local git state if there are uncommitted changes or unpushed commits.
+name, missing real `report/submission_metadata.json`, use of the generated demo
+draft instead of an explicit real recording path, and local git state if there
+are uncommitted changes or unpushed commits.
 
 ## Manual Items Before Final Upload
 
@@ -191,6 +210,7 @@ and local git state if there are uncommitted changes or unpushed commits.
    `scripts/apply_submission_metadata.py` if the teacher requires it or provides
    a template.
 3. Record the demo video using `report/demo_script.md`, or confirm that GIF
-   demos plus slides are acceptable.
+   demos plus slides or the generated `report/demo_video_draft.mp4` are
+   acceptable.
 4. Decide whether to include the large `external/PantheonRL` submodule in the
    archive or rely on `git submodule update --init --recursive`.

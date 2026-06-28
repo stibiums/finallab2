@@ -1319,13 +1319,62 @@ Conclusion: final packaging now has a read-only audit step. Once real
 `学号+姓名`, optional `report/submission_metadata.json`, and optional demo video
 are available, rerun the preflight and then build the archive.
 
+## Step 28: Demo Video Draft
+
+This step reduces the demo-recording blocker by generating a reproducible
+GIF-based MP4 draft from the existing experiment demos and report narrative.
+It is a submission scaffold and review artifact, not a replacement for a real
+screen recording if the teacher strictly requires live terminal interaction.
+
+New script:
+
+- `scripts/build_demo_video.py`
+
+Inputs:
+
+- `outputs/runs/baseline_simple/demo/demo.gif`
+- `outputs/runs/no_shaping_simple/demo/demo.gif`
+- `outputs/runs/multi_layout_curriculum/demo/simple_demo.gif`
+- `outputs/runs/baseline_random0_long/demo/random0_long_demo.gif`
+- `outputs/runs/baseline_random1/demo/random1_demo.gif`
+- `outputs/runs/baseline_unident_s/demo/unident_s_demo.gif`
+- `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/demo/small_corridor_full_chain_3cycle_jitter3_bc_ppo_best_demo.gif`
+
+Verified commands:
+
+```bash
+python -m py_compile scripts/build_demo_video.py scripts/check_submission_ready.py scripts/package_submission.py scripts/apply_submission_metadata.py
+python scripts/build_demo_video.py --gif-seconds 2 --output tmp/demo_video_test.mp4 --force
+python scripts/build_demo_video.py --force
+ffprobe -v error -show_entries format=duration,size -of default=nw=1 report/demo_video_draft.mp4
+ffmpeg -v error -y -ss 20 -i report/demo_video_draft.mp4 -frames:v 1 tmp/demo_video_frame.png
+python scripts/check_submission_ready.py --name 学号+姓名
+```
+
+Generated artifact:
+
+- `report/demo_video_draft.mp4`
+- Duration: `437.162760` seconds.
+- Size: `2411213` bytes.
+
+Preflight result after generation:
+
+- 0 failures.
+- Warnings remain for placeholder archive name, missing real metadata JSON, use
+  of the generated demo draft instead of an explicit real recording path, dirty
+  worktree while this change is uncommitted, and branch ahead of remote.
+
+Conclusion: the repository now has a reproducible demo-video draft path. The
+remaining course-facing choice is whether this GIF-based MP4 is acceptable, or
+whether to record a live screen-demo using `report/demo_script.md`.
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
 
 1. Final submission packaging: add real identity metadata if required, record
-   the demo video, and run `scripts/package_submission.py` with the real
-   `学号+姓名` archive stem.
+   the demo video or use the generated draft if acceptable, and run
+   `scripts/package_submission.py` with the real `学号+姓名` archive stem.
 2. Stronger partner-diversity: expand the `random1` partner population beyond
    two training partners before expecting held-out robustness.
 3. If time remains, test role-balanced `small_corridor` demos or a subtask

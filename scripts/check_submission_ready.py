@@ -24,6 +24,7 @@ import package_submission  # noqa: E402
 
 PLACEHOLDER_ARCHIVE_NAMES = {"", "学号+姓名", "submission_dry_run", "test"}
 DEMO_SUFFIXES = {".mp4", ".mov", ".mkv", ".webm"}
+DEFAULT_DEMO_VIDEO = ROOT / "report" / "demo_video_draft.mp4"
 
 
 class Reporter:
@@ -173,6 +174,13 @@ def check_metadata(reporter: Reporter, metadata: str) -> None:
 
 def check_demo_video(reporter: Reporter, demo_video: str | None) -> None:
     if not demo_video:
+        if DEFAULT_DEMO_VIDEO.exists():
+            reporter.warn(
+                "demo video path not provided; using generated report/demo_video_draft.mp4, "
+                "but replace it with a real screen recording if strictly required"
+            )
+            reporter.pass_(f"demo video draft exists: {rel(DEFAULT_DEMO_VIDEO)}")
+            return
         reporter.warn("demo video path not provided; GIF demos exist but prompt asks for screen recording")
         return
     path = Path(demo_video).expanduser()
