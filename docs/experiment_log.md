@@ -1946,6 +1946,114 @@ Artifacts:
 - `outputs/runs/partner_conditioned_random1_four_partners/traces/unknown_partner_seed76_inferred_ids_initial2_episode0.json`
 - `outputs/runs/partner_conditioned_random1_four_partners/traces/unknown_partner_seed76_inferred_ids_initial3_episode0.json`
 
+## Step 37: Larger Held-Out `random1` Partner Validation
+
+This step tests whether the seed76 unknown-partner collapse was an unlucky
+single held-out seed or a broader `random1` cross-play problem. Two additional
+unseen `random1` specialists are trained with the same 300k PPO setup as the
+previous seed76 probe, then evaluated against the partner-id conditioned ego
+under fixed assumed ids and online id inference. The same unknown partners are
+also tested against the older unconditioned partner-aware egos.
+
+New configs:
+
+- `configs/baseline_random1_seed77.json`
+- `configs/baseline_random1_seed78.json`
+
+Commands:
+
+```bash
+bash scripts/train.sh configs/baseline_random1_seed77.json
+bash scripts/train.sh configs/baseline_random1_seed78.json
+
+bash scripts/evaluate_conditioned_unknown.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --partner-run-dir outputs/runs/baseline_random1_seed77 \
+  --layout random1 \
+  --output-name unknown_partner_seed77_conditioned_ids
+bash scripts/evaluate_conditioned_inference.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --partner-run-dir outputs/runs/baseline_random1_seed77 \
+  --layout random1 \
+  --output-name unknown_partner_seed77_inferred_ids
+
+bash scripts/evaluate_conditioned_unknown.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --partner-run-dir outputs/runs/baseline_random1_seed78 \
+  --layout random1 \
+  --output-name unknown_partner_seed78_conditioned_ids
+bash scripts/evaluate_conditioned_inference.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --partner-run-dir outputs/runs/baseline_random1_seed78 \
+  --layout random1 \
+  --output-name unknown_partner_seed78_inferred_ids
+
+for seed in 77 78; do
+  for run in baseline_random1 partner_diversity_random1 \
+    partner_diversity_random1_three_partners \
+    partner_diversity_random1_three_partners_selfplay_mix; do
+    bash scripts/evaluate_matrix.sh outputs/runs/$run \
+      --partner-run-dir outputs/runs/baseline_random1_seed${seed} \
+      --layout random1 \
+      --output-name unknown_partner_seed${seed}_matrix
+  done
+done
+```
+
+Additional held-out partner self-play:
+
+| Run | Seed | Timesteps | Train seconds | Deterministic self-play soups |
+| --- | ---: | ---: | ---: | ---: |
+| `baseline_random1_seed76` | 76 | 300000 | 119.20 | 1.55 |
+| `baseline_random1_seed77` | 77 | 300000 | 121.40 | 5.25 |
+| `baseline_random1_seed78` | 78 | 300000 | 141.76 | 1.50 |
+
+Partner-conditioned ego against held-out partners:
+
+| Unknown partner | Fixed-id best soups | Online-inference best soups | Notes |
+| --- | ---: | ---: | --- |
+| `baseline_random1_seed76` | 0.00 | 0.00 | Inference mostly maps to known id 1. |
+| `baseline_random1_seed77` | 0.05 | 0.05 | Strong self-play partner, but cross-play almost never delivers. |
+| `baseline_random1_seed78` | 0.00 | 0.00 | Weaker self-play partner and no conditioned transfer. |
+
+Unconditioned prior egos against the new held-out partners:
+
+| Ego run | seed77 soups | seed78 soups |
+| --- | ---: | ---: |
+| `baseline_random1` | 0.00 | 0.00 |
+| `partner_diversity_random1` | 0.00 | 0.00 |
+| `partner_diversity_random1_three_partners` | 0.00 | 0.00 |
+| `partner_diversity_random1_three_partners_selfplay_mix` | 0.00 | 0.00 |
+
+Interpretation:
+
+- The seed76 result was not a one-off. Across three held-out partners, including
+  a strong 5.25-soup seed77 self-play partner, previous `random1` egos still
+  collapse to zero or near-zero sparse reward.
+- Partner-id conditioning remains useful only for known partners. It improves
+  the in-pool four-partner average/minimum, but fixed-id assumptions and simple
+  online action-match inference do not yield held-out robustness.
+- The next credible `random1` direction should stop adding one-off fixed seeds
+  to the same PPO wrapper. It needs a different representation or algorithmic
+  setup: latent/context partner inference, recurrent co-play adaptation, larger
+  population training with held-out validation during selection, or a real
+  MAPPO/HAPPO/HARL-style heterogeneous-agent comparison.
+
+Artifacts:
+
+- `outputs/runs/baseline_random1_seed77/metrics/train_summary.json`
+- `outputs/runs/baseline_random1_seed77/metrics/eval_metrics.json`
+- `outputs/runs/baseline_random1_seed78/metrics/train_summary.json`
+- `outputs/runs/baseline_random1_seed78/metrics/eval_metrics.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed77_conditioned_ids.csv`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed77_inferred_ids.csv`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed78_conditioned_ids.csv`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed78_inferred_ids.csv`
+- `outputs/runs/baseline_random1/metrics/unknown_partner_seed77_matrix.csv`
+- `outputs/runs/baseline_random1/metrics/unknown_partner_seed78_matrix.csv`
+- `outputs/runs/partner_diversity_random1/metrics/unknown_partner_seed77_matrix.csv`
+- `outputs/runs/partner_diversity_random1/metrics/unknown_partner_seed78_matrix.csv`
+- `outputs/runs/partner_diversity_random1_three_partners/metrics/unknown_partner_seed77_matrix.csv`
+- `outputs/runs/partner_diversity_random1_three_partners/metrics/unknown_partner_seed78_matrix.csv`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/unknown_partner_seed77_matrix.csv`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/unknown_partner_seed78_matrix.csv`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1954,11 +2062,12 @@ The next project direction should move beyond naive multi-layout mixing:
    the demo video or use the generated draft if acceptable, and run
    `scripts/package_submission.py` with the real `学号+姓名` archive stem.
 2. Stronger partner-diversity: the first partner-id conditioned run improves
-   four-known-partner average/minimum on `random1`, but the seed76 unknown
-   partner probe and the simple online-id-inference probe both collapse to 0
-   soups. Future work should add stronger latent partner inference, larger
-   population training with held-out validation, or HARL/MAPPO/HAPPO-style
-   heterogeneous-agent algorithms.
+   four-known-partner average/minimum on `random1`, but held-out seeds 76/77/78
+   all collapse to zero or near-zero soups under fixed ids, simple online-id
+   inference, and older unconditioned partner-aware egos. Future work should use
+   stronger latent partner inference, recurrent/context conditioning, larger
+   population training with held-out validation during selection, or
+   HARL/MAPPO/HAPPO-style heterogeneous-agent algorithms.
 3. If time remains, test a learned or more structured `small_corridor` subtask
    router with explicit pickup/delivery options. The first hand-written
    held-soup router is completed: it helps BC-only slightly but hurts the

@@ -74,7 +74,7 @@ failure.
 | Larger `random1` partner-population diagnostic | `outputs/runs/baseline_random1_seed73`, `outputs/runs/partner_diversity_random1_three_partners` |
 | Mixed fixed + learned `random1` partner diagnostic | `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix` |
 | Partner-id conditioned `random1` diagnostic | `outputs/runs/partner_conditioned_random1_four_partners` |
-| Unknown `random1` partner probe | `outputs/runs/baseline_random1_seed76` |
+| Unknown `random1` partner probes | `outputs/runs/baseline_random1_seed76`, `outputs/runs/baseline_random1_seed77`, `outputs/runs/baseline_random1_seed78` |
 | Role-balanced `small_corridor` diagnostic | `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` |
 | `small_corridor` subtask-router diagnostic | `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery` |
 | Role-specific `small_corridor` subtask-router diagnostic | `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder`, `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder` |
@@ -216,6 +216,10 @@ unknown-partner assumption sweep.
 After the online id-inference probe was added, the same
 `partner_conditioned_random1_four_partners` package entry also includes the
 unknown seed76 inferred-id summary and episode metrics.
+After the larger held-out `random1` validation was added, the dry run package
+also includes `baseline_random1_seed77` and `baseline_random1_seed78`
+train/default metrics, plus seed77/78 fixed-id, inferred-id, and prior-ego
+cross-play metrics.
 After the role-specific `small_corridor` subtask-router diagnostic was added,
 the dry run package includes the four holder-specific router variants and their
 metrics/traces.
