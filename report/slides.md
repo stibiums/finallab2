@@ -120,7 +120,7 @@ PPO baseline → failure analysis → specialists → layout router
 3. Single-layout specialists 能解决多个 hard layouts。
 4. Layout router 是当前最强 practical method。
 5. `small_corridor` 需要 scripted BC、perturbation 和 checkpoint selection；简单 role-balanced BC 不够。
-6. 后续重点是 stronger partner-conditioned/HARL-style 训练、learned option routing 和统一策略蒸馏。
+6. 后续重点是 latent/context partner inference、HARL-style 训练、learned option routing 和统一策略蒸馏。
 
 ---
 

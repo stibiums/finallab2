@@ -1573,69 +1573,6 @@ Artifacts:
 - `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval.json`
 - `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval_episodes.csv`
 
-## Step 35: Role-Specific `small_corridor` Subtask Router Diagnostic
-
-This step extends Step 31 with a more structured switch rule. Instead of
-switching to the delivery specialist whenever any player holds soup, the router
-can now switch only when the ego player holds soup, only when the partner holds
-soup, or when physical player 0/1 holds soup. This tests whether the delivery
-BC should be role-specific.
-
-New switch modes in `evaluate_subtask_router.py`:
-
-- `held_soup_ego`
-- `held_soup_alt`
-- `held_soup_p0`
-- `held_soup_p1`
-
-New configs:
-
-- `configs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder.json`
-- `configs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder.json`
-- `configs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder.json`
-- `configs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder.json`
-
-Commands:
-
-```bash
-bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder.json
-bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder.json
-bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder.json
-bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder.json
-```
-
-Standard-start h400 results:
-
-| Run | Base policy | Switch mode | Mean soups | Mean sparse reward | Mean episode reward | Mean base steps | Mean delivery steps |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Fixed-role jitter BC baseline | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | none | 2.50 | 50.0 | 93.25 | 400.00 | 0.00 |
-| Jitter BC role-specific router | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `held_soup_alt` | 2.60 | 52.0 | 97.95 | 334.25 | 65.75 |
-| Jitter BC ego-holder router | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `held_soup_ego` | 2.50 | 50.0 | 93.25 | 400.00 | 0.00 |
-| Current best BC+PPO baseline | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | none | 3.00 | 60.0 | 111.00 | 400.00 | 0.00 |
-| Best BC+PPO role-specific router | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `held_soup_alt` | 2.45 | 49.0 | 96.40 | 322.65 | 77.35 |
-| Best BC+PPO ego-holder router | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `held_soup_ego` | 3.00 | 60.0 | 111.00 | 400.00 | 0.00 |
-
-Interpretation:
-
-- In these `small_corridor` policies, soup is effectively held by the partner
-  side during delivery. Therefore `held_soup_alt` reproduces the original
-  `held_soup` behavior, while `held_soup_ego` never switches and matches the
-  base policy.
-- Role-specific gating explains the Step 31 result but does not improve it.
-  The delivery BC gives a tiny rescue to the BC-only jitter policy, but still
-  hurts the checkpoint-selected BC+PPO policy.
-- A useful next router would need a genuinely different option or gating
-  signal: learned confidence, uncertainty/rollback, or explicit pickup and
-  delivery options trained for both roles. Simple holder-role routing is not
-  enough.
-
-Artifacts:
-
-- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder/metrics/subtask_router_eval.json`
-- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder/metrics/subtask_router_eval.json`
-- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder/metrics/subtask_router_eval.json`
-- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder/metrics/subtask_router_eval.json`
-
 ## Step 32: Mixed Fixed + Learned `random1` Partner Population
 
 This step tests the remaining `random1` population idea from
@@ -1888,6 +1825,127 @@ Artifacts:
 - `outputs/runs/partner_diversity_random1_three_partners/metrics/unknown_partner_seed76_matrix.csv`
 - `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/unknown_partner_seed76_matrix.csv`
 
+## Step 35: Role-Specific `small_corridor` Subtask Router Diagnostic
+
+This step extends Step 31 with a more structured switch rule. Instead of
+switching to the delivery specialist whenever any player holds soup, the router
+can now switch only when the ego player holds soup, only when the partner holds
+soup, or when physical player 0/1 holds soup. This tests whether the delivery
+BC should be role-specific.
+
+New switch modes in `evaluate_subtask_router.py`:
+
+- `held_soup_ego`
+- `held_soup_alt`
+- `held_soup_p0`
+- `held_soup_p1`
+
+New configs:
+
+- `configs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder.json`
+- `configs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder.json`
+- `configs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder.json`
+- `configs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder.json`
+
+Commands:
+
+```bash
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder.json
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder.json
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder.json
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder.json
+```
+
+Standard-start h400 results:
+
+| Run | Base policy | Switch mode | Mean soups | Mean sparse reward | Mean episode reward | Mean base steps | Mean delivery steps |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Fixed-role jitter BC baseline | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | none | 2.50 | 50.0 | 93.25 | 400.00 | 0.00 |
+| Jitter BC role-specific router | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `held_soup_alt` | 2.60 | 52.0 | 97.95 | 334.25 | 65.75 |
+| Jitter BC ego-holder router | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `held_soup_ego` | 2.50 | 50.0 | 93.25 | 400.00 | 0.00 |
+| Current best BC+PPO baseline | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | none | 3.00 | 60.0 | 111.00 | 400.00 | 0.00 |
+| Best BC+PPO role-specific router | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `held_soup_alt` | 2.45 | 49.0 | 96.40 | 322.65 | 77.35 |
+| Best BC+PPO ego-holder router | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `held_soup_ego` | 3.00 | 60.0 | 111.00 | 400.00 | 0.00 |
+
+Interpretation:
+
+- In these `small_corridor` policies, soup is effectively held by the partner
+  side during delivery. Therefore `held_soup_alt` reproduces the original
+  `held_soup` behavior, while `held_soup_ego` never switches and matches the
+  base policy.
+- Role-specific gating explains the Step 31 result but does not improve it.
+  The delivery BC gives a tiny rescue to the BC-only jitter policy, but still
+  hurts the checkpoint-selected BC+PPO policy.
+- A useful next router would need a genuinely different option or gating
+  signal: learned confidence, uncertainty/rollback, or explicit pickup and
+  delivery options trained for both roles. Simple holder-role routing is not
+  enough.
+
+Artifacts:
+
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_alt_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ego_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_alt_holder/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery_ego_holder/metrics/subtask_router_eval.json`
+
+## Step 36: Online ID-Inference Probe for Unknown `random1` Partner
+
+This step extends Step 34 by testing whether the Step 33 partner-id conditioned
+ego can recover from an unseen partner if the assumed partner id is inferred
+online. The evaluator compares the unknown partner's action against each known
+training partner model on the same partner observation, accumulates action-match
+scores, and uses the best matching known partner id as the one-hot condition for
+the next ego action.
+
+New files:
+
+- `src/overcooked_project/evaluate_conditioned_inference.py`
+- `scripts/evaluate_conditioned_inference.sh`
+
+Updated files:
+
+- `src/overcooked_project/partner_conditioning.py`
+
+Command:
+
+```bash
+bash scripts/evaluate_conditioned_inference.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --partner-run-dir outputs/runs/baseline_random1_seed76 \
+  --layout random1 \
+  --output-name unknown_partner_seed76_inferred_ids
+```
+
+Unknown seed76 online-id-inference results:
+
+| Initial assumed id | Final id counts | Mean soups | Mean sparse reward | Mean episode reward | Mean id switches |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 0 | `{1: 20}` | 0.00 | 0.0 | 11.40 | 3.35 |
+| 1 | `{1: 18, 0: 1, 3: 1}` | 0.00 | 0.0 | 11.85 | 3.85 |
+| 2 | `{1: 17, 0: 3}` | 0.00 | 0.0 | 9.90 | 3.55 |
+| 3 | `{1: 19, 0: 1}` | 0.00 | 0.0 | 11.85 | 3.50 |
+
+Interpretation:
+
+- The simple action-match inference mostly assigns the unseen seed76 partner to
+  known partner id 1, regardless of the initial id.
+- This does not restore sparse reward: all tested initial ids still deliver
+  0.00 soups. The Step 34 failure is therefore not just caused by choosing the
+  wrong fixed one-hot id.
+- This is a useful negative diagnostic. The next `random1` robustness attempt
+  needs a stronger method: larger held-out validation, better latent partner
+  inference, recurrent/context-conditioned policies, or a MAPPO/HAPPO/HARL-style
+  heterogeneous-agent training setup.
+
+Artifacts:
+
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed76_inferred_ids.csv`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed76_inferred_ids.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/unknown_partner_seed76_inferred_ids_episodes.csv`
+- `outputs/runs/partner_conditioned_random1_four_partners/traces/unknown_partner_seed76_inferred_ids_initial0_episode0.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/traces/unknown_partner_seed76_inferred_ids_initial1_episode0.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/traces/unknown_partner_seed76_inferred_ids_initial2_episode0.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/traces/unknown_partner_seed76_inferred_ids_initial3_episode0.json`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1897,9 +1955,10 @@ The next project direction should move beyond naive multi-layout mixing:
    `scripts/package_submission.py` with the real `学号+姓名` archive stem.
 2. Stronger partner-diversity: the first partner-id conditioned run improves
    four-known-partner average/minimum on `random1`, but the seed76 unknown
-   partner probe collapses to 0 soups. Future work should add unknown-partner
-   inference, larger population training with held-out validation, or
-   HARL/MAPPO/HAPPO-style heterogeneous-agent algorithms.
+   partner probe and the simple online-id-inference probe both collapse to 0
+   soups. Future work should add stronger latent partner inference, larger
+   population training with held-out validation, or HARL/MAPPO/HAPPO-style
+   heterogeneous-agent algorithms.
 3. If time remains, test a learned or more structured `small_corridor` subtask
    router with explicit pickup/delivery options. The first hand-written
    held-soup router is completed: it helps BC-only slightly but hurts the

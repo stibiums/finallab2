@@ -213,6 +213,9 @@ evaluation, and four-known-partner matrix metrics.
 After the unknown `random1` partner probe was added, the dry run package
 includes `baseline_random1_seed76` train/default metrics plus the conditioned
 unknown-partner assumption sweep.
+After the online id-inference probe was added, the same
+`partner_conditioned_random1_four_partners` package entry also includes the
+unknown seed76 inferred-id summary and episode metrics.
 After the role-specific `small_corridor` subtask-router diagnostic was added,
 the dry run package includes the four holder-specific router variants and their
 metrics/traces.

@@ -166,7 +166,7 @@ Router 相关代码：
 | `partner_diversity_random1` | 2.25 to 4.55 with two training partners | 0.45 with held-out seed72, 1.10 with held-out seed73 | Seen partners 上更稳，但没有解决真正 held-out 泛化。 |
 | `partner_diversity_random1_three_partners` | 0.65 to 4.90 with three training partners | 1.00 with held-out seed73 | Seen-partner minimum 提高，但四伙伴平均没有超过 two-partner run。 |
 | `partner_diversity_random1_three_partners_selfplay_mix` | 0.10 with learned `alt.zip` | 0.05 to 1.85 across four fixed partners | 固定 partner + learned partner 混合训练效果更差，是负结果。 |
-| `partner_conditioned_random1_four_partners` | 5.60 with copied first partner | 0.80 to 1.70 with weaker known partners; 0.00 with unknown seed76 | 显式 partner id 条件化提升已知 partner avg/min，但不泛化到未知 seed76。 |
+| `partner_conditioned_random1_four_partners` | 5.60 with copied first partner | 0.80 to 1.70 with weaker known partners; 0.00 with unknown seed76 under fixed and inferred ids | 显式 partner id 条件化提升已知 partner avg/min，但不泛化到未知 seed76。 |
 | `unident_s` specialists | 12.60 to 12.70 | 12.60 to 12.65 | 两个 seed 间较鲁棒。 |
 
 因此，报告中不能只展示 self-play 分数。每个声称鲁棒的 specialist 都需要 cross-play 或 held-out partner 证据。
@@ -197,7 +197,7 @@ Router 相关代码：
 
 1. 当前最强方案是 specialist router，不是单一神经策略的跨地图泛化。
 2. `small_corridor` 的成功依赖 scripted demonstrations 和 checkpoint selection，不能表述为 PPO 从零探索成功。
-3. `random1` 在 held-out partner 下明显崩溃；两 partner 和三 partner 的 partner-aware training 都只改善部分 seen partners，mixed fixed + learned partner 版本更差；partner-id conditioning 能把四个已知 partner 平均提高到 2.34、最低提高到 0.80，但遇到未知 seed76 仍为 0。
+3. `random1` 在 held-out partner 下明显崩溃；两 partner 和三 partner 的 partner-aware training 都只改善部分 seen partners，mixed fixed + learned partner 版本更差；partner-id conditioning 能把四个已知 partner 平均提高到 2.34、最低提高到 0.80，但遇到未知 seed76 时固定 id 和简单在线 id 推断都仍为 0。
 4. `small_corridor` 的简单 subtask router 和 role-specific router 都不能超过当前 best checkpoint；delivery BC 只对 BC-only 策略有很小救援作用。
 5. Tomato layouts 当前因 `KeyError: 'tomato'` 没有纳入主结果，应作为环境栈问题单独说明。
 6. PPO fine-tuning 可能非单调，最终 checkpoint 不一定代表最佳策略。
@@ -211,7 +211,7 @@ Router 相关代码：
 ## 7. 后续工作
 
 1. 最终提交前按课程模板补充课程、队伍、姓名和学号等元信息。
-2. 继续研究 `random1` partner robustness；partner-id conditioning 已经比无条件 partner pool 更好，但 seed76 unknown probe 仍为 0，后续需要 unknown-partner inference、held-out validation 或 HARL/MAPPO/HAPPO 风格算法。
+2. 继续研究 `random1` partner robustness；partner-id conditioning 已经比无条件 partner pool 更好，但 seed76 fixed-id 与简单 online-id inference probes 仍为 0，后续需要更强 latent/context partner inference、held-out validation 或 HARL/MAPPO/HAPPO 风格算法。
 3. 设计 learned option routing 或更结构化的 `small_corridor` pickup/delivery controller；当前 held-soup 和 role-specific 手写规则都不足以超过 best checkpoint。
 4. 尝试 distillation，把 router specialists 蒸馏成统一策略。
 5. 单独修复 tomato layout 的 featurizer 问题。

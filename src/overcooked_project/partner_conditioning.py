@@ -17,6 +17,17 @@ def partner_conditioning_config(config: Mapping) -> dict:
     return {"enabled": bool(raw), "num_partners": None, "unknown_partner_id": None}
 
 
+def append_partner_id(obs, num_partners: int, partner_id: int) -> np.ndarray:
+    if num_partners <= 0:
+        raise ValueError("num_partners must be positive")
+    if partner_id < 0 or partner_id >= num_partners:
+        raise ValueError(f"partner_id {partner_id} outside [0, {num_partners})")
+    base = np.asarray(obs, dtype=np.float32).reshape(-1)
+    partner_one_hot = np.zeros(int(num_partners), dtype=np.float32)
+    partner_one_hot[int(partner_id)] = 1.0
+    return np.concatenate([base, partner_one_hot]).astype(np.float32)
+
+
 class PartnerIDConditioningWrapper(gym.Wrapper):
     """Append a one-hot partner id to the ego observation.
 
@@ -59,10 +70,7 @@ class PartnerIDConditioningWrapper(gym.Wrapper):
         return partner_id
 
     def _augment(self, obs) -> np.ndarray:
-        base = np.asarray(obs, dtype=np.float32).reshape(-1)
-        partner_one_hot = np.zeros(self.num_partners, dtype=np.float32)
-        partner_one_hot[self._partner_id()] = 1.0
-        return np.concatenate([base, partner_one_hot]).astype(np.float32)
+        return append_partner_id(obs, self.num_partners, self._partner_id())
 
     def reset(self, **kwargs):
         return self._augment(self.env.reset(**kwargs))
