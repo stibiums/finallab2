@@ -92,6 +92,7 @@ Report figure:
 | `random1` specialists | 5.20 to 5.80 | 0.00 to 1.10 across held-out partners | Strong self-play, brittle cross-play. |
 | `partner_diversity_random1` | 2.25 to 4.55 with two training partners | 0.45 with held-out seed72, 1.10 with held-out seed73 | Improves in-pool compatibility but does not solve held-out robustness. |
 | `partner_diversity_random1_three_partners` | 0.65 to 4.90 with three training partners | 1.00 with held-out seed73 | Raises the seen-partner minimum but does not beat the two-partner run on four-partner average. |
+| `partner_diversity_random1_three_partners_selfplay_mix` | 0.10 with learned `alt.zip` | 0.05 to 1.85 across four fixed partners | Mixed fixed + learned partner training is a negative result. |
 | `unident_s` specialists | 12.60 to 12.70 | 12.60 to 12.65 | Robust across tested seeds. |
 
 Evidence:
@@ -108,6 +109,8 @@ Evidence:
 - `outputs/runs/baseline_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
 - `outputs/runs/partner_diversity_random1/metrics/partner_matrix_hard_random1_four_partners.csv`
 - `outputs/runs/partner_diversity_random1_three_partners/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/eval_metrics.json`
 - `outputs/runs/baseline_unident_s/metrics/partner_matrix_hard_unident_s.csv`
 - `outputs/runs/baseline_unident_s_seed81/metrics/partner_matrix_hard_unident_s.csv`
 

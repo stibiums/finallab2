@@ -183,6 +183,7 @@ Router 评估脚本：
 | `random1` specialists | 5.20 to 5.80 | 0.00 to 1.10 across held-out partners | 自博弈成功但跨 partner 崩溃。 |
 | `partner_diversity_random1` | 2.25 to 4.55 with two training partners | 0.45 with held-out seed72, 1.10 with held-out seed73 | Seen partners 上更稳，但没有解决真正 held-out 泛化。 |
 | `partner_diversity_random1_three_partners` | 0.65 to 4.90 with three training partners | 1.00 with held-out seed73 | Seen-partner minimum 提高，但四伙伴平均没有超过 two-partner run。 |
+| `partner_diversity_random1_three_partners_selfplay_mix` | 0.10 with learned `alt.zip` | 0.05 to 1.85 across four fixed partners | 固定 partner + learned partner 混合训练效果更差，是负结果。 |
 | `unident_s` specialists | 12.60 to 12.70 | 12.60 to 12.65 | 两个 seed 间较鲁棒。 |
 
 因此报告中不能只展示 self-play 分数。每个声称鲁棒的 specialist 都应有 cross-play 或 held-out partner 证据。
@@ -213,7 +214,7 @@ Router 评估脚本：
 
 1. 当前最强方案是 specialist router，不是单一神经策略的跨地图泛化。
 2. `small_corridor` 的成功依赖 scripted demonstrations 和 checkpoint selection，不能表述为 PPO 从零探索成功。
-3. `random1` 在 held-out partner 下明显崩溃；两 partner 和三 partner 的 partner-aware training 都只改善部分 seen partners，仍不足以解决 held-out 泛化。
+3. `random1` 在 held-out partner 下明显崩溃；两 partner 和三 partner 的 partner-aware training 都只改善部分 seen partners，mixed fixed + learned partner 版本更差，仍不足以解决 held-out 泛化。
 4. Tomato layouts 当前因 `KeyError: 'tomato'` 没有纳入主结果，应作为环境栈问题单独说明。
 5. PPO fine-tuning 可能非单调，最终 checkpoint 不一定代表最佳策略。
 
@@ -221,12 +222,12 @@ Router 评估脚本：
 
 本项目展示了一个从基础 PPO baseline 到 specialist router 的完整 MARL 实验链条。默认 shaping 的 PPO 能在 `simple` 上学到合作，但 sparse-only、zero-shot 和朴素多地图训练都失败。通过训练单地图 specialist 并使用 layout router，我们在多个困难 onion layouts 上获得了稳定表现。对于最困难的 `small_corridor`，我们通过 full-chain BC、多轮 demonstrations、wait perturbation 和 checkpoint-selected PPO fine-tuning，最终达到 3.00 soups。
 
-因此，本项目的核心结论是：在当前 Overcooked 设置下，跨地图能力更适合通过 specialist composition 和 policy selection 来实现；如果要进一步追求统一策略或更强泛化，需要引入 layout-conditioned policy、distillation 或更系统的 partner population / self-play population 训练。
+因此，本项目的核心结论是：在当前 Overcooked 设置下，跨地图能力更适合通过 specialist composition 和 policy selection 来实现；如果要进一步追求统一策略或更强泛化，需要引入 layout-conditioned policy、distillation、partner-conditioned policy，或 MAPPO/HAPPO/HARL 式异质多智能体训练。
 
 ## 7. 后续工作
 
 1. 将本草稿扩写为正式报告，并加入 GIF 截图或链接。
-2. 继续扩大并结构化 `random1` partner population；当前 3-partner run 仍没有真正修复 held-out partner 崩溃。
+2. 继续研究 `random1` partner robustness；当前 3-partner fixed-pool 和 mixed fixed + learned partner run 都没有真正修复 held-out partner 崩溃，下一步应考虑 partner-conditioned 或 HARL/MAPPO/HAPPO 风格算法。
 3. 设计 learned option routing 或更结构化的 `small_corridor` pickup/delivery controller，而不是只做手写 held-soup switch。
 4. 尝试 distillation，把 router specialists 蒸馏成统一策略。
 5. 单独修复 tomato layout 的 featurizer 问题。

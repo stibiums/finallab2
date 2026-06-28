@@ -72,6 +72,7 @@ failure.
 | Best five-layout router metrics | `outputs/runs/router_onion_layouts_with_small_corridor_jitter3_bc_ppo` |
 | Partner robustness diagnostic | `outputs/runs/partner_diversity_random1` |
 | Larger `random1` partner-population diagnostic | `outputs/runs/baseline_random1_seed73`, `outputs/runs/partner_diversity_random1_three_partners` |
+| Mixed fixed + learned `random1` partner diagnostic | `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix` |
 | Role-balanced `small_corridor` diagnostic | `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` |
 | `small_corridor` subtask-router diagnostic | `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery` |
 
@@ -199,6 +200,10 @@ archive was rebuilt again with 21 package items and size 9.2 MB. The rebuilt
 archive contains `baseline_random1_seed73` and
 `partner_diversity_random1_three_partners` train summaries and four-partner
 matrix metrics.
+After the mixed fixed + learned `random1` partner diagnostic was added, the dry
+run package includes
+`partner_diversity_random1_three_partners_selfplay_mix` train, learned-alt
+evaluation, and four-partner matrix metrics.
 
 The generated demo-video draft wrote successfully to
 `report/demo_video_draft.mp4`; `ffprobe` reported duration `437.162760`

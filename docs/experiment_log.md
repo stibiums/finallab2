@@ -1573,6 +1573,80 @@ Artifacts:
 - `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval.json`
 - `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval_episodes.csv`
 
+## Step 32: Mixed Fixed + Learned `random1` Partner Population
+
+This step tests the remaining `random1` population idea from
+`docs/project_plan.md`: combine the three fixed `random1` partners from Step 29
+with one simultaneously learned on-policy partner. The implementation adds an
+optional `include_learned_partner` switch to `train_diverse.py`. When enabled,
+the partner pool contains all fixed `StaticPolicyAgent` partners plus one
+`OnPolicyAgent` trained from the config's `alt_config`.
+
+New files:
+
+- `configs/partner_diversity_random1_three_partners_selfplay_mix.json`
+
+Updated files:
+
+- `src/overcooked_project/train_diverse.py`
+
+Commands:
+
+```bash
+bash scripts/train_diverse.sh configs/partner_diversity_random1_three_partners_selfplay_mix.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_diversity_random1_three_partners_selfplay_mix \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --partner-run-dir outputs/runs/baseline_random1_seed73 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1_four_partners
+
+bash scripts/evaluate.sh outputs/runs/partner_diversity_random1_three_partners_selfplay_mix \
+  --episodes 20 \
+  --layout random1 \
+  --output-name eval_metrics
+```
+
+Training setup:
+
+| Run | Seed | Timesteps | Fixed partners | Learned partner | Train seconds |
+| --- | ---: | ---: | ---: | --- | ---: |
+| `partner_diversity_random1_three_partners_selfplay_mix` | 74 | 300000 | 3 | yes | 115.74 |
+
+Four-partner compatibility matrix, reported as mean soups delivered:
+
+| Ego run | `baseline_random1` partner | `baseline_random1_seed71` partner | `baseline_random1_seed72` partner | `baseline_random1_seed73` partner | Average | Minimum |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `partner_diversity_random1_three_partners_selfplay_mix` | 1.85 | 0.05 | 0.30 | 0.55 | 0.69 | 0.05 |
+
+The default `evaluate.py` pairing against the run's learned `alt.zip` reaches
+only 0.10 soups, so the failure is not just a held-out fixed-partner issue.
+
+Interpretation:
+
+- Adding one learned on-policy partner to the fixed partner pool does not
+  improve `random1` robustness in this setup. It performs worse than both the
+  two-fixed-partner run and the three-fixed-partner run on the four-partner
+  matrix.
+- The training rollout reward climbed to roughly 80 shaped reward near the end,
+  but this did not translate into sparse soup delivery under deterministic
+  evaluation.
+- This is a useful negative result: a mixed fixed + learned partner pool is not
+  sufficient by itself. A stronger attempt should change the algorithmic setup,
+  for example partner-conditioned policies, MAPPO/HAPPO-style agent-wise
+  training, or a HARL-inspired heterogeneous-agent comparison, rather than only
+  adding a learned partner to the current PPO wrapper.
+
+Artifacts:
+
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/train_summary.json`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/eval_metrics.json`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/models/ego.zip`
+- `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/models/alt.zip`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1580,9 +1654,11 @@ The next project direction should move beyond naive multi-layout mixing:
 1. Final submission packaging: add real identity metadata if required, record
    the demo video or use the generated draft if acceptable, and run
    `scripts/package_submission.py` with the real `学号+姓名` archive stem.
-2. Stronger partner-diversity: the 3-partner fixed-pool run is completed but
-   still does not solve held-out robustness; future work should use a larger or
-   more structured population method rather than just adding one fixed partner.
+2. Stronger partner-diversity: the 3-partner fixed-pool run and the mixed fixed
+   + learned partner run are both completed, but neither solves held-out
+   robustness. Future work should change the training formulation, such as
+   partner-conditioned policies or HARL/MAPPO/HAPPO-style heterogeneous-agent
+   algorithms, rather than just adding another partner.
 3. If time remains, test a learned or more structured `small_corridor` subtask
    router with explicit pickup/delivery options. The first hand-written
    held-soup router is completed: it helps BC-only slightly but hurts the

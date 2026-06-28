@@ -47,6 +47,7 @@ SELECTED_RUNS = [
     "router_onion_layouts_with_small_corridor_jitter3_bc_ppo",
     "partner_diversity_random1",
     "partner_diversity_random1_three_partners",
+    "partner_diversity_random1_three_partners_selfplay_mix",
 ]
 
 IGNORE_NAMES = {
