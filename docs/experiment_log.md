@@ -1197,12 +1197,56 @@ Remaining manual items before upload:
 4. Decide whether to include the large `external/PantheonRL` submodule offline
    or rely on `git submodule update --init --recursive`.
 
+## Step 25: Submission Packager
+
+This step turns the submission manifest into an executable packaging helper.
+
+New script:
+
+- `scripts/package_submission.py`
+
+Default behavior:
+
+- Builds a compact `dist/<name>.zip` archive.
+- Includes source code, configs, scripts, report files, docs, selected trained
+  runs, metrics, and GIF demos.
+- Excludes the 867 MB `external/PantheonRL` submodule by default while keeping
+  `.gitmodules` and setup instructions for reproducibility.
+- Supports `--include-external` for a fully offline package.
+- Supports `--demo-video path/to/demo.mp4` to include a screen recording.
+- Supports `--dry-run` for validation without writing an archive.
+
+Verified commands:
+
+```bash
+python -m py_compile scripts/package_submission.py
+python scripts/package_submission.py --name submission_dry_run --dry-run
+python scripts/package_submission.py --name submission_dry_run --output-dir tmp/package_test --force
+```
+
+The test archive was written to `tmp/package_test/submission_dry_run.zip`
+with size 6.3 MB. A zip-content check confirmed that it contains:
+
+- `report/final_report.pdf`
+- `report/slides.pdf`
+- `docs/submission_manifest.md`
+- `report/demo_script.md`
+- `src/overcooked_project/train.py`
+- `scripts/package_submission.py`
+- `outputs/runs/baseline_simple/models/ego.zip`
+- `outputs/runs/baseline_simple/demo/demo.gif`
+- `outputs/runs/router_onion_layouts_with_small_corridor_jitter3_bc_ppo/metrics/router_eval.csv`
+
+Conclusion: the final archive can now be generated reproducibly once the real
+`学号+姓名` archive stem and optional demo video path are known.
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
 
 1. Final submission packaging: add real identity metadata if required, record
-   the demo video, and package the archive as `学号+姓名`.
+   the demo video, and run `scripts/package_submission.py` with the real
+   `学号+姓名` archive stem.
 2. Stronger partner-diversity: expand the `random1` partner population beyond
    two training partners before expecting held-out robustness.
 3. If time remains, test role-balanced `small_corridor` demos or a subtask

@@ -18,6 +18,7 @@ models/
 trajs/
 runs/
 tmp/
+dist/
 
 # Generated media
 *.mp4

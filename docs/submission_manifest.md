@@ -51,6 +51,7 @@ For non-graduating students, the prompt lists the deadline as
 | Metrics | selected `outputs/runs/*/metrics/` paths below | Ready locally |
 | Demo visuals | selected `outputs/runs/*/demo/*.gif` paths below | Ready locally |
 | Demo recording | `report/demo_script.md` gives the recording plan | Manual screen recording still needed if the teacher strictly requires video |
+| Archive helper | `scripts/package_submission.py` | Ready; dry-run and test zip verified |
 
 ## Recommended Runs To Include
 
@@ -103,6 +104,25 @@ python scripts/build_report_assets.py
 python scripts/build_report_exports.py
 ```
 
+Dry-run the final package checklist:
+
+```bash
+python scripts/package_submission.py --name 学号+姓名 --dry-run
+```
+
+Create the compact final archive after replacing `学号+姓名` with the real
+archive name:
+
+```bash
+python scripts/package_submission.py --name 学号+姓名
+```
+
+Add a recorded demo video if available:
+
+```bash
+python scripts/package_submission.py --name 学号+姓名 --demo-video path/to/demo.mp4 --force
+```
+
 Evaluate the strongest router:
 
 ```bash
@@ -118,13 +138,26 @@ ENV_PREFIX=/Volumes/data/conda_envs/overcooked-marl bash scripts/evaluate_router
 ## Packaging Notes
 
 The local `external/PantheonRL` submodule is about 867 MB. For a compact code
-submission, include `.gitmodules` and the setup instructions above, then let the
-reviewer initialize the submodule. If the course requires a fully offline
-package, include `external/PantheonRL` as well and expect the archive to be much
-larger.
+submission, `scripts/package_submission.py` includes `.gitmodules` and setup
+instructions but excludes `external/PantheonRL` by default, so the reviewer can
+initialize it with `git submodule update --init --recursive`. If the course
+requires a fully offline package, pass `--include-external` and expect the
+archive to be much larger.
 
 The repository branch is currently ahead of `origin/main`; do not assume remote
 state is up to date unless the branch is pushed.
+
+Packaging verification performed on 2026-06-28:
+
+```bash
+python -m py_compile scripts/package_submission.py
+python scripts/package_submission.py --name submission_dry_run --dry-run
+python scripts/package_submission.py --name submission_dry_run --output-dir tmp/package_test --force
+```
+
+The compact test archive wrote successfully to
+`tmp/package_test/submission_dry_run.zip` and contained the required report,
+code, model, demo, and router-metric paths checked after creation.
 
 ## Manual Items Before Final Upload
 

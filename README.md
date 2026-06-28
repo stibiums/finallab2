@@ -15,6 +15,7 @@
 - Final submission checklist: [docs/submission_manifest.md](docs/submission_manifest.md).
 - Report SVG assets: [docs/assets](docs/assets).
 - Final report/slides exports and demo recording script: [report](report).
+- Submission archive helper: `python scripts/package_submission.py --name 学号+姓名 --dry-run`.
 
 ## Setup
 

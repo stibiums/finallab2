@@ -28,6 +28,20 @@
 - Manual remaining item: record the screen-demo video and rename the final
   archive to the required `学号+姓名` format.
 
+## Build Submission Archive
+
+From the project root, first dry-run the package manifest:
+
+```bash
+python scripts/package_submission.py --name 学号+姓名 --dry-run
+```
+
+Then replace `学号+姓名` with the real archive stem and build:
+
+```bash
+python scripts/package_submission.py --name 学号+姓名
+```
+
 ## Regenerate Figures
 
 Run from the project root:
