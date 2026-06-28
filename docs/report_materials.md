@@ -65,6 +65,8 @@ Report figure:
 | `small_corridor_full_chain_3cycle_bc_from_v3` | 1.90 | 38.0 | Multi-cycle BC learns repeated loop partially. |
 | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | 2.50 | 50.0 | Wait-perturbed demos improve robustness. |
 | `small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` | 2.40 | 48.0 | Training both policies on combined p0/p1 role data does not improve over fixed-role jitter BC. |
+| `small_corridor_subtask_router_jitter_bc_delivery` | 2.60 | 52.0 | Held-soup switch to delivery BC gives a small BC-only rescue. |
+| `small_corridor_subtask_router_best_bc_ppo_delivery` | 2.45 | 49.0 | The same switch hurts the checkpoint-selected BC+PPO policy. |
 | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` best at 25k | 3.00 | 60.0 | Best checkpoint solves the 3-soup evaluation horizon. |
 | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` final 50k | 0.85 | 17.0 | Final checkpoint collapses; checkpoint selection matters. |
 
@@ -72,6 +74,8 @@ Evidence:
 
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_from_v3/metrics/eval_standard_start_h400.json`
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3/metrics/eval_standard_start_h400.json`
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval.json`
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/metrics/train_summary.json`
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune/metrics/curriculum_eval.csv`
 
@@ -140,7 +144,7 @@ Recommended demos for presentation:
    multi-cycle BC, perturbed BC+PPO.
 7. Robustness: partner matrices and checkpoint-selection risk.
 8. Limitations and future work: tomato maps, unified policy, partner-aware
-   training, and a more structured `small_corridor` subtask router.
+   training, and learned option routing for `small_corridor`.
 
 ## Final Claims To Keep Precise
 

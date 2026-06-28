@@ -73,6 +73,7 @@ failure.
 | Partner robustness diagnostic | `outputs/runs/partner_diversity_random1` |
 | Larger `random1` partner-population diagnostic | `outputs/runs/baseline_random1_seed73`, `outputs/runs/partner_diversity_random1_three_partners` |
 | Role-balanced `small_corridor` diagnostic | `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` |
+| `small_corridor` subtask-router diagnostic | `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery`, `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery` |
 
 ## Demo Assets
 

@@ -188,6 +188,7 @@ img {
 <li>3-cycle BC：平均 1.90 soups</li>
 <li>Wait-jittered BC：平均 2.50 soups</li>
 <li>Role-balanced BC：平均 2.40 soups，未超过固定分工 BC</li>
+<li>Subtask router：BC-only 到 2.60，但会把最佳 BC+PPO 降到 2.45</li>
 <li>Perturbed BC + PPO 25k checkpoint：稳定 3.00 soups</li>
 <li>PPO 50k final：退化到 0.85 soups</li>
 </ul>
@@ -219,7 +220,7 @@ img {
 <li>Single-layout specialists 能解决多个 hard layouts。</li>
 <li>Layout router 是当前最强 practical method。</li>
 <li><code>small_corridor</code> 需要 scripted BC、perturbation 和 checkpoint selection；简单 role-balanced BC 不够。</li>
-<li>后续重点是更大 partner population、subtask router 和统一策略蒸馏。</li>
+<li>后续重点是更大 partner population、learned option routing 和统一策略蒸馏。</li>
 </ol>
 <div class="slide-number">12 / 14</div>
 </section>

@@ -42,6 +42,7 @@ SMALL_CORRIDOR_PROGRESS = [
     ("3-cycle BC", 1.90),
     ("Wait-jittered BC", 2.50),
     ("Role-balanced BC", 2.40),
+    ("Subtask router", 2.60),
     ("BC+PPO best 25k", 3.00),
     ("BC+PPO final 50k", 0.85),
 ]

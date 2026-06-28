@@ -1511,6 +1511,68 @@ Artifacts:
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3/metrics/eval_standard_start_h400.json`
 - `outputs/runs/small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3/metrics/eval_standard_start_h400.csv`
 
+## Step 31: `small_corridor` Subtask Router Diagnostic
+
+This step tests the remaining `small_corridor` extension in
+`docs/project_plan.md`: a state-based subtask router. The evaluator switches
+from a base full-chain policy to the delivery specialist when the current state
+contains a player holding soup. This is intended as a diagnostic, not as a new
+training method.
+
+New files:
+
+- `src/overcooked_project/evaluate_subtask_router.py`
+- `scripts/evaluate_subtask_router.sh`
+- `configs/small_corridor_subtask_router_jitter_bc_delivery.json`
+- `configs/small_corridor_subtask_router_best_bc_ppo_delivery.json`
+
+Commands:
+
+```bash
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery.json
+
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_jitter_bc_delivery.json \
+  --run-name small_corridor_subtask_router_jitter_bc_delivery_ready \
+  --output-dir outputs/runs/small_corridor_subtask_router_jitter_bc_delivery_ready \
+  --switch-mode held_or_ready_soup
+
+bash scripts/evaluate_subtask_router.sh configs/small_corridor_subtask_router_best_bc_ppo_delivery.json
+```
+
+The evaluator deliberately mimics the existing evaluation convention: ego acts
+deterministically, while the partner side uses the same `StaticPolicyAgent`
+policy-forward behavior used by the normal `evaluate.py` path.
+
+Standard-start h400 results:
+
+| Run | Base policy | Delivery policy | Switch mode | Mean soups | Mean sparse reward | Mean episode reward | Mean base steps | Mean delivery steps | Soup distribution |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Fixed-role jitter BC baseline | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | none | none | 2.50 | 50.0 | 93.25 | - | - | 3 episodes with 1 soup, 4 with 2 soups, 13 with 3 soups |
+| Subtask router | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `small_corridor_delivery_bc_from_v3` | `held_soup` | 2.60 | 52.0 | 97.95 | 334.25 | 65.75 | 1 episode with 0 soups, 1 with 1 soup, 3 with 2 soups, 15 with 3 soups |
+| Subtask router ready variant | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `small_corridor_delivery_bc_from_v3` | `held_or_ready_soup` | 2.60 | 52.0 | 97.95 | 334.25 | 65.75 | same as `held_soup` |
+| Current best BC+PPO baseline | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | none | none | 3.00 | 60.0 | 111.00 | - | - | 20 episodes with 3 soups |
+| Subtask router over current best | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `small_corridor_delivery_bc_from_v3` | `held_soup` | 2.45 | 49.0 | 96.40 | 322.65 | 77.35 | 3 episodes with 1 soup, 5 with 2 soups, 12 with 3 soups |
+
+Interpretation:
+
+- Switching to a delivery specialist helps the BC-only full-chain policy a
+  little: 2.50 to 2.60 soups and 13 to 15 episodes reaching 3 soups.
+- The same switch hurts the checkpoint-selected BC+PPO policy: 3.00 to 2.45
+  soups. The delivery specialist is useful as a narrow rescue behavior, but it
+  disrupts the already fine-tuned closed-loop policy.
+- Therefore this subtask router is useful evidence for the failure analysis,
+  not a replacement for the current best `small_corridor` route.
+- A stronger router would need learned gating, confidence checks, or a
+  separately trained pickup/delivery option rather than a single hand-written
+  held-soup rule.
+
+Artifacts:
+
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_jitter_bc_delivery/metrics/subtask_router_eval_episodes.csv`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval.json`
+- `outputs/runs/small_corridor_subtask_router_best_bc_ppo_delivery/metrics/subtask_router_eval_episodes.csv`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1521,8 +1583,9 @@ The next project direction should move beyond naive multi-layout mixing:
 2. Stronger partner-diversity: the 3-partner fixed-pool run is completed but
    still does not solve held-out robustness; future work should use a larger or
    more structured population method rather than just adding one fixed partner.
-3. If time remains, test a more structured `small_corridor` subtask router as
-   an extension beyond the solved 3-soup specialist; simple role-balanced BC is
-   already tested and did not improve over fixed-role jitter BC.
+3. If time remains, test a learned or more structured `small_corridor` subtask
+   router with explicit pickup/delivery options. The first hand-written
+   held-soup router is completed: it helps BC-only slightly but hurts the
+   current best BC+PPO route.
 4. Tomato support decision: either avoid tomato maps in this environment stack
    or patch/replace the featurizer before using tomato layouts.

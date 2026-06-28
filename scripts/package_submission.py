@@ -41,6 +41,8 @@ SELECTED_RUNS = [
     "baseline_random1_seed73",
     "baseline_unident_s",
     "small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3",
+    "small_corridor_subtask_router_jitter_bc_delivery",
+    "small_corridor_subtask_router_best_bc_ppo_delivery",
     "small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune",
     "router_onion_layouts_with_small_corridor_jitter3_bc_ppo",
     "partner_diversity_random1",

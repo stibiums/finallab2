@@ -145,10 +145,12 @@ Router 相关代码：
 | `small_corridor_full_chain_3cycle_bc_from_v3` | 1.90 | 38.0 | 多轮 BC 有提升但不稳定。 |
 | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | 2.50 | 50.0 | 等待扰动提升鲁棒性。 |
 | `small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` | 2.40 | 48.0 | 合并 p0/p1 角色数据训练两个模型，没有超过固定分工 BC。 |
+| `small_corridor_subtask_router_jitter_bc_delivery` | 2.60 | 52.0 | soup-held 时切换到 delivery BC，对 BC-only 有小幅帮助。 |
+| `small_corridor_subtask_router_best_bc_ppo_delivery` | 2.45 | 49.0 | 同样切换会破坏 checkpoint-selected BC+PPO 闭环。 |
 | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` best at 25k | 3.00 | 60.0 | 20/20 局达到 3 soups。 |
 | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` final 50k | 0.85 | 17.0 | 过训练后崩溃。 |
 
-这说明 `small_corridor` 的难点不只是 reward coefficient 不合适，而是长时序探索和多子任务衔接困难。Scripted demonstrations 提供了可学习的动作链，wait jitter 让 BC 不再只记住精确时钟。简单地把两名玩家的角色数据合并给两个模型并没有继续提升表现，说明瓶颈不只是固定角色数据量不足。PPO fine-tuning 在 25k checkpoint 进一步稳定策略，但 50k final 崩溃，说明 checkpoint selection 是必要的。
+这说明 `small_corridor` 的难点不只是 reward coefficient 不合适，而是长时序探索和多子任务衔接困难。Scripted demonstrations 提供了可学习的动作链，wait jitter 让 BC 不再只记住精确时钟。简单地把两名玩家的角色数据合并给两个模型并没有继续提升表现，说明瓶颈不只是固定角色数据量不足。手写 subtask router 可以对 BC-only 末端送餐略微补救，但会破坏已经 fine-tune 好的 BC+PPO 闭环。PPO fine-tuning 在 25k checkpoint 进一步稳定策略，但 50k final 崩溃，说明 checkpoint selection 是必要的。
 
 ### 3.5 Partner Robustness
 
@@ -207,6 +209,6 @@ Router 相关代码：
 
 1. 最终提交前按课程模板补充课程、队伍、姓名和学号等元信息。
 2. 继续扩大并结构化 `random1` partner population；当前 3-partner run 仍没有真正修复 held-out partner 崩溃。
-3. 设计更结构化的 `small_corridor` subtask router，而不是只做简单角色数据合并。
+3. 设计 learned option routing 或更结构化的 `small_corridor` pickup/delivery controller，而不是只做手写 held-soup switch。
 4. 尝试 distillation，把 router specialists 蒸馏成统一策略。
 5. 单独修复 tomato layout 的 featurizer 问题。

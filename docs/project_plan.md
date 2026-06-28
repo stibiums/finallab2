@@ -138,6 +138,8 @@ Completed results:
 | `small_corridor_full_chain_3cycle_bc_ppo_finetune` | `small_corridor` | 50000 | 1.90 best / 1.55 final | 38.0 best / 31.0 final | PPO fine-tuning still does not beat BC-only; best checkpoint remains the initial 3-cycle BC. |
 | `small_corridor_full_chain_3cycle_jitter3_bc_from_v3` | `small_corridor` | BC 60 epochs | 2.50 | 50.0 | Wait-perturbed demos make the BC loop substantially more stable. |
 | `small_corridor_full_chain_3cycle_jitter3_role_balanced_bc_from_v3` | `small_corridor` | BC 60 epochs, combined p0/p1 role data for both policies | 2.40 | 48.0 | Negative diagnostic; simple role-balanced data sharing slightly underperforms fixed-role jitter BC and does not replace checkpoint selection. |
+| `small_corridor_subtask_router_jitter_bc_delivery` | `small_corridor` | State-based evaluator; switch from jitter BC to delivery BC when a player holds soup | 2.60 | 52.0 | Slightly improves BC-only full-chain policy, but remains below checkpoint-selected BC+PPO. |
+| `small_corridor_subtask_router_best_bc_ppo_delivery` | `small_corridor` | Same held-soup switch over current best BC+PPO base | 2.45 | 49.0 | Negative diagnostic; delivery specialist disrupts the already fine-tuned closed loop. |
 | `small_corridor_full_chain_3cycle_jitter3_bc_ppo_finetune` | `small_corridor` | 50000 | 3.00 best at 25k / 0.85 final | 60.0 best / 17.0 final | Checkpoint selection is essential; the 25k checkpoint solves the 3-soup horizon, while 50k over-training collapses. |
 | `baseline_random1` | `random1` | 300000 | 5.80 | 116.0 | Success; add to router. |
 | `baseline_unident_s` | `unident_s` | 300000 | 12.70 | 254.0 | Success; add to router. |
@@ -393,7 +395,7 @@ The next concrete work item is:
 2. Record the required demo video using `report/demo_script.md`, or use the generated `report/demo_video_draft.mp4` if a GIF-based demo artifact is acceptable.
 3. Run `python scripts/check_submission_ready.py --name 学号+姓名`, then `python scripts/package_submission.py --name 学号+姓名` after replacing the archive stem with the real student/name string, and include a demo video with `--demo-video` if available.
 4. If more experiment time remains, try a more systematic `random1` population method, such as alternating co-play/self-play partners, larger partner pools, or partner-conditioned training; the completed three-partner run improved the seen-partner minimum but did not solve held-out seed73.
-5. If time remains, test a `small_corridor` subtask router as an extension beyond the now-successful 3-soup specialist. The simple role-balanced BC diagnostic is completed and should be kept as a negative result rather than a new route.
+5. If time remains, test a learned or more structured `small_corridor` subtask router with explicit pickup/delivery options. The simple role-balanced BC diagnostic is completed, and the first hand-written held-soup router only helps BC-only slightly while hurting the current best BC+PPO route.
 
 After each new attempt, decide whether to:
 
