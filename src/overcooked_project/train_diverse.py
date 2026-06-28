@@ -11,6 +11,7 @@ from stable_baselines3 import PPO
 
 from . import register_envs
 from .config import env_config_from_config, load_config, run_dir_from_config, save_json
+from .partner_conditioning import maybe_wrap_partner_id_conditioning, partner_conditioning_config
 from .train import make_ppo_kwargs
 
 
@@ -87,6 +88,15 @@ def train_diverse(config: dict) -> Path:
         )
         env.add_partner_agent(learned_partner)
 
+    conditioning = partner_conditioning_config(config)
+    if conditioning["enabled"] and conditioning.get("num_partners") is None:
+        config["partner_id_conditioning"] = {
+            **conditioning,
+            "num_partners": len(partner_paths) + int(include_learned_partner),
+        }
+        save_json(run_dir / "config.resolved.json", config)
+    env = maybe_wrap_partner_id_conditioning(env, config, partner_run_dirs)
+
     ego_kwargs = dict(config["ego_config"])
     ego_kwargs.setdefault("verbose", 1)
     ego = PPO(
@@ -127,6 +137,7 @@ def train_diverse(config: dict) -> Path:
         "partner_model_paths": partner_paths,
         "include_learned_partner": include_learned_partner,
         "num_partner_options": len(partner_paths) + int(include_learned_partner),
+        "partner_id_conditioning": partner_conditioning_config(config),
     }
     save_json(metrics_dir / "train_summary.json", summary)
     print(f"Saved diverse ego model to {ego_path}.zip")

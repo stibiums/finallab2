@@ -1647,6 +1647,90 @@ Artifacts:
 - `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/models/ego.zip`
 - `outputs/runs/partner_diversity_random1_three_partners_selfplay_mix/models/alt.zip`
 
+## Step 33: Partner-ID Conditioned `random1` Diagnostic
+
+This step follows the plan's stronger `random1` partner-robustness item after
+the mixed fixed + learned partner run failed. Instead of adding another partner
+to the same PPO wrapper, it gives the ego policy an explicit one-hot identifier
+for the current partner. This is a lightweight partner-conditioned diagnostic:
+it tests whether knowing the teammate identity helps with in-pool compatibility.
+
+New files:
+
+- `src/overcooked_project/partner_conditioning.py`
+- `configs/partner_conditioned_random1_four_partners.json`
+
+Updated files:
+
+- `src/overcooked_project/train_diverse.py`
+- `src/overcooked_project/evaluate.py`
+- `src/overcooked_project/evaluate_matrix.py`
+
+Implementation:
+
+- `PartnerIDConditioningWrapper` appends a one-hot partner id to the ego
+  observation. On `random1`, the observation changes from 62 to 66 dimensions.
+- During training, the wrapper reads PantheonRL's current `partnerids[0]` after
+  episode reset.
+- During matrix evaluation, the wrapper fixes the one-hot id from the partner
+  run's position in the configured training partner pool.
+
+Commands:
+
+```bash
+bash scripts/train_diverse.sh configs/partner_conditioned_random1_four_partners.json
+
+bash scripts/evaluate_matrix.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --partner-run-dir outputs/runs/baseline_random1 \
+  --partner-run-dir outputs/runs/baseline_random1_seed71 \
+  --partner-run-dir outputs/runs/baseline_random1_seed72 \
+  --partner-run-dir outputs/runs/baseline_random1_seed73 \
+  --layout random1 \
+  --output-name partner_matrix_hard_random1_four_partners
+
+bash scripts/evaluate.sh outputs/runs/partner_conditioned_random1_four_partners \
+  --episodes 20 \
+  --layout random1 \
+  --output-name eval_metrics
+```
+
+Training setup:
+
+| Run | Seed | Timesteps | Fixed partners | Conditioning | Train seconds |
+| --- | ---: | ---: | ---: | --- | ---: |
+| `partner_conditioned_random1_four_partners` | 75 | 300000 | 4 | partner id one-hot | 105.30 |
+
+Four-partner compatibility matrix, reported as mean soups delivered:
+
+| Ego run | `baseline_random1` partner | `baseline_random1_seed71` partner | `baseline_random1_seed72` partner | `baseline_random1_seed73` partner | Average | Minimum |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `baseline_random1` | 5.80 | 0.25 | 0.65 | 1.10 | 1.95 | 0.25 |
+| `partner_diversity_random1` | 2.25 | 4.55 | 0.45 | 1.10 | 2.09 | 0.45 |
+| `partner_diversity_random1_three_partners` | 4.90 | 1.40 | 0.65 | 1.00 | 1.99 | 0.65 |
+| `partner_diversity_random1_three_partners_selfplay_mix` | 1.85 | 0.05 | 0.30 | 0.55 | 0.69 | 0.05 |
+| `partner_conditioned_random1_four_partners` | 5.60 | 1.25 | 0.80 | 1.70 | 2.34 | 0.80 |
+
+The default `evaluate.py` pairing against the copied first partner reaches 5.60
+soups, matching the matrix row for `baseline_random1`.
+
+Interpretation:
+
+- Partner-id conditioning is the first `random1` partner-aware method that
+  improves both four-partner average and minimum over the previous runs.
+- It does not solve partner robustness: seed71, seed72, and seed73 still remain
+  much weaker than the best self-play-like pairing.
+- The result supports the next algorithmic direction: partner-conditioned
+  policies or MAPPO/HAPPO/HARL-style heterogeneous-agent training are more
+  promising than simply adding more partners to an unconditioned PPO pool.
+
+Artifacts:
+
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/train_summary.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/eval_metrics.json`
+- `outputs/runs/partner_conditioned_random1_four_partners/metrics/partner_matrix_hard_random1_four_partners.csv`
+- `outputs/runs/partner_conditioned_random1_four_partners/models/ego.zip`
+- `outputs/runs/partner_conditioned_random1_four_partners/models/alt.zip`
+
 ## Next Experiments
 
 The next project direction should move beyond naive multi-layout mixing:
@@ -1654,11 +1738,11 @@ The next project direction should move beyond naive multi-layout mixing:
 1. Final submission packaging: add real identity metadata if required, record
    the demo video or use the generated draft if acceptable, and run
    `scripts/package_submission.py` with the real `学号+姓名` archive stem.
-2. Stronger partner-diversity: the 3-partner fixed-pool run and the mixed fixed
-   + learned partner run are both completed, but neither solves held-out
-   robustness. Future work should change the training formulation, such as
-   partner-conditioned policies or HARL/MAPPO/HAPPO-style heterogeneous-agent
-   algorithms, rather than just adding another partner.
+2. Stronger partner-diversity: the first partner-id conditioned run improves
+   four-partner average/minimum on `random1`, but it still does not solve
+   partner robustness. Future work should extend this idea with
+   partner-conditioned policies, unknown-partner evaluation, or
+   HARL/MAPPO/HAPPO-style heterogeneous-agent algorithms.
 3. If time remains, test a learned or more structured `small_corridor` subtask
    router with explicit pickup/delivery options. The first hand-written
    held-soup router is completed: it helps BC-only slightly but hurts the

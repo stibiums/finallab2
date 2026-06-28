@@ -11,6 +11,7 @@ from stable_baselines3 import PPO
 
 from . import register_envs
 from .config import env_config_from_config, load_json, save_json
+from .partner_conditioning import maybe_wrap_partner_id_conditioning
 
 
 def run_episode(env, ego_model: PPO, deterministic: bool) -> dict:
@@ -72,6 +73,14 @@ def evaluate_models(
     ego_model = PPO.load(str(run_dir / "models" / "ego"))
     alt_model = PPO.load(str(run_dir / "models" / "alt"))
     env.add_partner_agent(StaticPolicyAgent(alt_model.policy))
+    conditioned_partner_dirs = [Path(p) for p in config.get("partner_run_dirs", [run_dir])]
+    default_partner_dir = conditioned_partner_dirs[0]
+    env = maybe_wrap_partner_id_conditioning(
+        env,
+        config,
+        partner_run_dirs=conditioned_partner_dirs,
+        fixed_partner_run_dir=default_partner_dir,
+    )
 
     rows = [run_episode(env, ego_model, deterministic) for _ in range(episodes)]
     env.close()

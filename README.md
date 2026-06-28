@@ -439,6 +439,7 @@ Repeat the same pattern for `baseline_random0_long` / `baseline_random0_long_see
 | random1 held-out seed73 | `configs/baseline_random1_seed73.json` | Add a fourth `random1` partner; self-play remains weak and cross-play stays brittle |
 | random1 three-partner diversity | `configs/partner_diversity_random1_three_partners.json` | Train one `random1` ego against three fixed partners; improves the seen-partner minimum but does not solve held-out seed73 |
 | random1 fixed+learned partner mix | `configs/partner_diversity_random1_three_partners_selfplay_mix.json` | Train against three fixed partners plus one learned on-policy partner; negative result with 0.69 average soups over four fixed partners |
+| random1 partner-id conditioned | `configs/partner_conditioned_random1_four_partners.json` | Append partner id one-hot to ego observation; improves four-known-partner average to 2.34 soups and minimum to 0.80 |
 | unident_s expert | `configs/baseline_unident_s.json` | Add a successful `unident_s` specialist for router coverage |
 | unident_s held-out seed | `configs/baseline_unident_s_seed81.json` | Test whether `unident_s` is robust across independently trained partners |
 | simple+random0 router | `configs/router_simple_random0.json` | Compose map specialists and measure routed coverage |

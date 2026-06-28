@@ -12,6 +12,7 @@ from stable_baselines3 import PPO
 from . import register_envs
 from .config import env_config_from_config, load_json, save_json
 from .evaluate import run_episode
+from .partner_conditioning import maybe_wrap_partner_id_conditioning
 
 
 DEFAULT_LAYOUTS = ["simple", "simple_tomato", "small_corridor", "random0", "random1", "unident_s"]
@@ -85,6 +86,12 @@ def evaluate_matrix(
                 partner_model = PPO.load(str(partner_model_path))
                 env = gym.make(layout_config["env_id"], **env_config_from_config(layout_config))
                 env.add_partner_agent(StaticPolicyAgent(partner_model.policy))
+                env = maybe_wrap_partner_id_conditioning(
+                    env,
+                    layout_config,
+                    partner_run_dirs=partner_run_dirs,
+                    fixed_partner_run_dir=partner_run_dir,
+                )
                 episode_rows = [run_episode(env, ego_model, deterministic) for _ in range(episodes)]
                 stats = summarize(episode_rows)
                 row = {**base_row, **stats}
